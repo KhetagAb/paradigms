@@ -13,12 +13,12 @@ public class BinarySearchMax {
         * R = max(a)
      */
     private static int iterBinSearchMax(final int[] a) {
-        // a.length >= 0
+        // a.length > 0
         int l = -1, r = a.length, m;
         // l = -1, r = a.length, l + 1 < r
 
         // Inv: l + 1 < r && exists i: l < i < r: a[i] = max(a) && Immutable
-        // l < r && Inv
+        // l + 1 < r && Inv
         while (r - l > 2) {
             // l + 2 < r
             m = (l + r) / 2;
@@ -29,12 +29,12 @@ public class BinarySearchMax {
                 // a[m] < a[m + 1] && forall i in [0; m]: a[m + 1] > a[i]
                 l = m;
                 // l' = m
-                // a[m] < a[m + 1] && exists i: l < i < r: a[i] = max(a)
+                // l + 1 < r && a[m] < a[m + 1] && Immutable && exists i: l < i < r: a[i] = max(a)
             } else {
                 // a[m] >= a[m + 1]
                 r = m + 1;
                 // r' = m + 1
-                // a[m] >= a[m + 1] && l + 1 < r && exists i: l < i < r: a[i] = max(a)
+                // l + 1 < r && a[m] >= a[m + 1] && Immutable && exists i: l < i < r: a[i] = max(a)
             }
             // l' + 1 < r' = r && exists i: l' < i < r': a[i] = max(a)
         }
