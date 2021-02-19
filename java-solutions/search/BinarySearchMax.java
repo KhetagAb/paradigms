@@ -1,6 +1,8 @@
 package search;
 
 public class BinarySearchMax {
+    // define max(a) MAX: forall i in [0; a.length) a[i] <= MAX
+
     /*
     Pred:
         * a != null
@@ -8,7 +10,7 @@ public class BinarySearchMax {
             1) i < j <= k: a[i] < a[j]
             2) k <= j < i: a[i] < a[j]
     Post:
-        * R = MAX: forall i, l < i < r: a[MAX] >= a[i]
+        * R = max(a)
      */
     private static int iterBinSearchMax(final int[] a) {
         // a.length >= 0
