@@ -174,7 +174,7 @@ public class ArrayQueueADT {
 
     /*
         PRED: queue != null
-        POST: R = "[ a_1 , ... , a_size ]"
+        POST: R = "[a_1, ... , a_size]"
     */
     public static String toStr(ArrayQueueADT queue) {
         String[] result = Arrays.stream(toArray(queue)).map(Object::toString).toArray(String[]::new);

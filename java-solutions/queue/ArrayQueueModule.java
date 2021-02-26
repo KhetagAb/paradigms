@@ -152,7 +152,7 @@ public class ArrayQueueModule {
 
     /*
         PRED: true
-        POST: R = "[ a_1 , ... , a_size ]"
+        POST: R = "[a_1, ... , a_size]"
     */
     public static String toStr() {
         String[] result = Arrays.stream(toArray()).map(Object::toString).toArray(String[]::new);
