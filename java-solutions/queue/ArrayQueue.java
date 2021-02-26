@@ -32,7 +32,7 @@ public class ArrayQueue {
     }
 
     private void ensureCapacity() {
-        if (tail == front && elements[front] != null) {
+        if (tail == front && Objects.nonNull(elements[front])) {
             tail = elements.length;
             elements = Arrays.copyOf(elements, elements.length * 2);
             for (int i = 0; i < front; i++) {
@@ -84,7 +84,7 @@ public class ArrayQueue {
         POST: R == [size == 0] && Imm
     */
     public boolean isEmpty() {
-        return front == tail && elements[front] == null;
+        return front == tail && !Objects.nonNull(elements[front]);
     }
 
     /*

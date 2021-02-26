@@ -28,11 +28,12 @@ public class ArrayQueueADT {
     }
 
     /*
-        PRED: e != null
+        PRED: e != null && queue != null
         POST: size = size' + 1 && a[size] = e && Imm: forall i = 1..size': a[i] = a'[i]
     */
     public static void enqueue(ArrayQueueADT queue, Object element) {
         Objects.requireNonNull(element);
+        Objects.requireNonNull(queue);
 
         ensureCapacity(queue);
         queue.elements[queue.tail] = element;
@@ -40,7 +41,9 @@ public class ArrayQueueADT {
     }
 
     private static void ensureCapacity(ArrayQueueADT queue) {
-        if (queue.tail == queue.front && queue.elements[queue.front] != null) {
+        Objects.requireNonNull(queue);
+
+        if (queue.tail == queue.front && Objects.nonNull(queue.elements[queue.front])) {
             queue.tail = queue.elements.length;
             queue.elements = Arrays.copyOf(queue.elements, queue.elements.length * 2);
             for (int i = 0; i < queue.front; i++) {
@@ -52,20 +55,22 @@ public class ArrayQueueADT {
     }
 
     /*
-        PRED: size > 0
+        PRED: size > 0 && queue != null
         POST: R == a[1] && size = size' && Imm
     */
     public static Object element(ArrayQueueADT queue) {
+        Objects.requireNonNull(queue);
         assert !isEmpty(queue);
 
         return queue.elements[queue.front];
     }
 
     /*
-        PRED: size > 0
+        PRED: size > 0 && queue != null
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public static Object dequeue(ArrayQueueADT queue) {
+        Objects.requireNonNull(queue);
         assert !isEmpty(queue);
 
         Object result = queue.elements[queue.front];
@@ -76,10 +81,12 @@ public class ArrayQueueADT {
     }
 
     /*
-        PRED: true
+        PRED: true && queue != null
         POST: R == size && Imm
     */
     public static int size(ArrayQueueADT queue) {
+        Objects.requireNonNull(queue);
+
         if (queue.front == queue.tail && !isEmpty(queue)) {
             return queue.elements.length;
         } else {
@@ -88,18 +95,22 @@ public class ArrayQueueADT {
     }
 
     /*
-        PRED: true
+        PRED: queue != null
         POST: R == [size == 0] && Imm
     */
     public static boolean isEmpty(ArrayQueueADT queue) {
-        return queue.front == queue.tail && queue.elements[queue.front] == null;
+        Objects.requireNonNull(queue);
+
+        return queue.front == queue.tail && !Objects.nonNull(queue.elements[queue.front]);
     }
 
     /*
-        PRED: true
+        PRED: queue != null
         POST: size == 0
     */
     public static void clear(ArrayQueueADT queue) {
+        Objects.requireNonNull(queue);
+
         for (int i = queue.front; i < queue.tail; i = (i + 1) % queue.elements.length) {
             queue.elements[i] = null;
         }
