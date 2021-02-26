@@ -16,7 +16,6 @@ public class ArrayQueueADT {
             first = a[1]
     */
 
-    private int size = 0;
     private int front = 0, tail = 0;
     private Object[] elements = new Object[1];
 
@@ -38,11 +37,10 @@ public class ArrayQueueADT {
         ensureCapacity(queue);
         queue.elements[queue.tail] = element;
         queue.tail = (queue.tail + 1) % queue.elements.length;
-        queue.size++;
     }
 
     private static void ensureCapacity(ArrayQueueADT queue) {
-        if (queue.tail == queue.front && queue.size != 0) {
+        if (queue.tail == queue.front && queue.elements[queue.front] != null) {
             queue.tail = queue.elements.length;
             queue.elements = Arrays.copyOf(queue.elements, queue.elements.length * 2);
             for (int i = 0; i < queue.front; i++) {
@@ -58,7 +56,7 @@ public class ArrayQueueADT {
         POST: R == a[1] && size = size' && Imm
     */
     public static Object element(ArrayQueueADT queue) {
-        assert queue.size > 0;
+        assert !isEmpty(queue);
 
         return queue.elements[queue.front];
     }
@@ -68,12 +66,11 @@ public class ArrayQueueADT {
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public static Object dequeue(ArrayQueueADT queue) {
-        assert queue.size > 0;
+        assert !isEmpty(queue);
 
         Object result = queue.elements[queue.front];
         queue.elements[queue.front] = null;
         queue.front = (queue.front + 1) % queue.elements.length;
-        queue.size--;
 
         return result;
     }
@@ -83,7 +80,11 @@ public class ArrayQueueADT {
         POST: R == size && Imm
     */
     public static int size(ArrayQueueADT queue) {
-        return queue.size;
+        if (queue.front == queue.tail && !isEmpty(queue)) {
+            return queue.elements.length;
+        } else {
+            return (queue.tail - queue.front + queue.elements.length) % queue.elements.length;
+        }
     }
 
     /*
@@ -91,7 +92,7 @@ public class ArrayQueueADT {
         POST: R == [size == 0] && Imm
     */
     public static boolean isEmpty(ArrayQueueADT queue) {
-        return queue.size == 0;
+        return queue.front == queue.tail && queue.elements[queue.front] == null;
     }
 
     /*
@@ -103,7 +104,6 @@ public class ArrayQueueADT {
             queue.elements[i] = null;
         }
         queue.elements = new Object[1];
-        queue.size = 0;
         queue.front = queue.tail = 0;
     }
 }

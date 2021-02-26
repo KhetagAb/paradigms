@@ -16,7 +16,6 @@ public class ArrayQueueModule {
             first = a[1]
     */
 
-    private static int size = 0;
     private static int front = 0, tail = 0;
     private static Object[] elements = new Object[1];
 
@@ -30,11 +29,10 @@ public class ArrayQueueModule {
         ensureCapacity();
         elements[tail] = element;
         tail = (tail + 1) % elements.length;
-        size++;
     }
 
     private static void ensureCapacity() {
-        if (tail == front && size != 0) {
+        if (tail == front && elements[front] != null) {
             tail = elements.length;
             elements = Arrays.copyOf(elements, elements.length * 2);
             for (int i = 0; i < front; i++) {
@@ -50,7 +48,7 @@ public class ArrayQueueModule {
         POST: R == a[1] && size = size' && Imm
     */
     public static Object element() {
-        assert size > 0;
+        assert !isEmpty();
 
         return elements[front];
     }
@@ -60,12 +58,11 @@ public class ArrayQueueModule {
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public static Object dequeue() {
-        assert size > 0;
+        assert !isEmpty();
 
         Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
-        size--;
 
         return result;
     }
@@ -75,7 +72,11 @@ public class ArrayQueueModule {
         POST: R == size && Imm
     */
     public static int size() {
-        return size;
+        if (front == tail && !isEmpty()) {
+            return elements.length;
+        } else {
+            return (tail - front + elements.length) % elements.length;
+        }
     }
 
     /*
@@ -83,7 +84,7 @@ public class ArrayQueueModule {
         POST: R == [size == 0] && Imm
     */
     public static boolean isEmpty() {
-        return size == 0;
+        return front == tail && elements[front] == null;
     }
 
     /*
@@ -95,7 +96,6 @@ public class ArrayQueueModule {
             elements[i] = null;
         }
         elements = new Object[1];
-        size = 0;
         front = tail = 0;
     }
 }

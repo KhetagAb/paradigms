@@ -16,7 +16,6 @@ public class ArrayQueue {
             first = a[1]
     */
 
-    private int size = 0;
     private int front = 0, tail = 0;
     private Object[] elements = new Object[1];
 
@@ -30,7 +29,6 @@ public class ArrayQueue {
         ensureCapacity();
         elements[tail] = element;
         tail = (tail + 1) % elements.length;
-        size++;
     }
 
     private void ensureCapacity() {
@@ -50,7 +48,7 @@ public class ArrayQueue {
         POST: R == a[1] && size = size' && Imm
     */
     public Object element() {
-        assert size > 0;
+        assert !isEmpty();
 
         return elements[front];
     }
@@ -60,12 +58,11 @@ public class ArrayQueue {
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public Object dequeue() {
-        assert size > 0;
+        assert !isEmpty();
 
         Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
-        size--;
 
         return result;
     }
@@ -75,7 +72,11 @@ public class ArrayQueue {
         POST: R == size && Imm
     */
     public int size() {
-        return size;
+        if (front == tail && !isEmpty()) {
+            return elements.length;
+        } else {
+            return (tail - front + elements.length) % elements.length;
+        }
     }
 
     /*
@@ -83,7 +84,7 @@ public class ArrayQueue {
         POST: R == [size == 0] && Imm
     */
     public boolean isEmpty() {
-        return size == 0;
+        return front == tail && elements[front] == null;
     }
 
     /*
@@ -95,7 +96,6 @@ public class ArrayQueue {
             elements[i] = null;
         }
         elements = new Object[1];
-        size = 0;
         front = tail = 0;
     }
 }
