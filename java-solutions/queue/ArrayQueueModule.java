@@ -1,57 +1,53 @@
 package queue;
 
-import java.util.Arrays;
 import java.util.Objects;
 
-public class ArrayQueueModule {
+public class ArrayQueueModule extends CommonArrayQueue {
     /*
         MODEL:
             [a_1, a_2, ..., a_size]
             size -- размер очереди
-            first -- первый элемент очереди
 
         Inv:
             size >= 0
             forall i = 1..size: a_i != null
-            first = a[1]
+
+        Let Imm: forall i = 1..size': a[i] = a'[i]
     */
 
-    private static int front = 0, tail = 0;
-    private static Object[] elements = new Object[1];
+    private static int front = 0, size = 0;
+    private static Object[] elements = new Object[2];
 
     /*
         PRED: e != null
-        POST: size = size' + 1 && a[size] = e && Imm: forall i = 1..size': a[i] = a'[i]
+        POST: size = size' + 1 && a[size] = e && Imm
     */
     public static void enqueue(Object element) {
-        Objects.requireNonNull(element);
+        assert Objects.nonNull(element);
 
         ensureCapacity();
-        elements[tail] = element;
-        tail = (tail + 1) % elements.length;
+        elements[(front + size) % elements.length] = element;
+        size++;
     }
 
     /*
         PRED: e != null
-        POST: size = size' + 1 && a[1] = e && Imm: forall i = 2..size': a[i + 1] = a'[i]
+        POST: size = size' + 1 && a[1] = e && forall i = 2..size': a[i + 1] = a'[i]
     */
     public static void push(Object element) {
-        Objects.requireNonNull(element);
+        assert Objects.nonNull(element);
 
         ensureCapacity();
         front = (front - 1 + elements.length) % elements.length;
         elements[front] = element;
+        size++;
     }
 
     private static void ensureCapacity() {
-        if (tail == front && Objects.nonNull(elements[front])) {
-            tail = elements.length;
-            elements = Arrays.copyOf(elements, elements.length * 2);
-            for (int i = 0; i < front; i++) {
-                elements[tail] = elements[i];
-                elements[i] = null;
-                tail++;
-            }
+        if (size == elements.length) {
+            elements = normalize(elements, front, size, elements.length * 2);
+
+            front = 0;
         }
     }
 
@@ -72,7 +68,7 @@ public class ArrayQueueModule {
     public static Object peek() {
         assert !isEmpty();
 
-        return elements[(tail - 1 + elements.length) % elements.length];
+        return elements[(front + size - 1) % elements.length];
     }
 
     /*
@@ -85,6 +81,7 @@ public class ArrayQueueModule {
         Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
+        size--;
 
         return result;
     }
@@ -96,7 +93,8 @@ public class ArrayQueueModule {
     public static Object remove() {
         assert !isEmpty();
 
-        tail = (tail - 1 + elements.length) % elements.length;
+        size--;
+        int tail = (front + size) % elements.length;
         Object result = elements[tail];
         elements[tail] = null;
 
@@ -108,11 +106,7 @@ public class ArrayQueueModule {
         POST: R == size && Imm
     */
     public static int size() {
-        if (front == tail && !isEmpty()) {
-            return elements.length;
-        } else {
-            return (tail - front + elements.length) % elements.length;
-        }
+        return size;
     }
 
     /*
@@ -120,43 +114,34 @@ public class ArrayQueueModule {
         POST: R == [size == 0] && Imm
     */
     public static boolean isEmpty() {
-        return front == tail && !Objects.nonNull(elements[front]);
+        return size == 0;
     }
 
     /*
         PRED: true
-        POST: size == 0
+        POST: size == 0 && Imm
     */
     public static void clear() {
-        for (int i = front; i < tail; i = (i + 1) % elements.length) {
-            elements[i] = null;
+        for (int i = 0; i < size; i++) {
+            elements[(front + i) % elements.length] = null;
         }
-        elements = new Object[1];
-        front = tail = 0;
+        elements = new Object[2];
+        front = size = 0;
     }
 
     /*
         PRED: true
-        POST: R = [a_1, a_2, ..., a_size]
+        POST: R = [a_1, a_2, ..., a_size] && Imm
     */
     public static Object[] toArray() {
-        int len = size();
-        Object[] result = new Object[len];
-
-        for (int i = 0; i < len; i++) {
-            result[i] = elements[(i + front) % elements.length];
-        }
-
-        return result;
+        return normalize(elements, front, size, size);
     }
 
     /*
         PRED: true
-        POST: R = "[a_1, ... , a_size]"
+        POST: R = "[a_1, ... , a_size]" && Imm
     */
     public static String toStr() {
-        String[] result = Arrays.stream(toArray()).map(Object::toString).toArray(String[]::new);
-
-        return '[' + String.join(", ", result) + ']';
+        return CommonArrayQueue.toStr(toArray());
     }
 }

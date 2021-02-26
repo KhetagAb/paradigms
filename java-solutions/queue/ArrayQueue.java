@@ -1,9 +1,8 @@
 package queue;
 
-import java.util.Arrays;
 import java.util.Objects;
 
-public class ArrayQueue {
+public class ArrayQueue extends CommonArrayQueue {
     /*
         MODEL:
             [a_1, a_2, ..., a_size]
@@ -16,41 +15,39 @@ public class ArrayQueue {
         Let Imm: forall i = 1..size': a[i] = a'[i]
     */
 
-    private int front = 0, tail = 0;
-    private Object[] elements = new Object[1];
+    private int front = 0, size = 0;
+    private Object[] elements = new Object[2];
 
     /*
         PRED: e != null
         POST: size = size' + 1 && a[size] = e && Imm
     */
-    public void enqueue(final Object element) {
+    public void enqueue(Object element) {
+        assert Objects.nonNull(element);
+
         ensureCapacity();
-        elements[tail] = Objects.requireNonNull(element);
-        tail = (tail + 1) % elements.length;
+        elements[(front + size) % elements.length] = element;
+        size++;
     }
 
     /*
         PRED: e != null
         POST: size = size' + 1 && a[1] = e && forall i = 2..size': a[i + 1] = a'[i]
     */
-    public void push(final Object element) {
-        Objects.requireNonNull(element);
+    public void push(Object element) {
+        assert Objects.nonNull(element);
 
         ensureCapacity();
         front = (front - 1 + elements.length) % elements.length;
         elements[front] = element;
+        size++;
     }
 
     private void ensureCapacity() {
-        if (tail == front && Objects.nonNull(elements[front])) {
-            tail = elements.length;
-            elements = Arrays.copyOf(elements, elements.length * 2);
-            // :NOTE: Копирование в ручную
-            for (int i = 0; i < front; i++) {
-                elements[tail] = elements[i];
-                elements[i] = null;
-                tail++;
-            }
+        if (size == elements.length) {
+            elements = normalize(elements, front, size, elements.length * 2);
+
+            front = 0;
         }
     }
 
@@ -71,7 +68,7 @@ public class ArrayQueue {
     public Object peek() {
         assert !isEmpty();
 
-        return elements[(tail - 1 + elements.length) % elements.length];
+        return elements[(front + size - 1) % elements.length];
     }
 
     /*
@@ -81,9 +78,10 @@ public class ArrayQueue {
     public Object dequeue() {
         assert !isEmpty();
 
-        final Object result = elements[front];
+        Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
+        size--;
 
         return result;
     }
@@ -95,8 +93,9 @@ public class ArrayQueue {
     public Object remove() {
         assert !isEmpty();
 
-        tail = (tail - 1 + elements.length) % elements.length;
-        final Object result = elements[tail];
+        size--;
+        int tail = (front + size) % elements.length;
+        Object result = elements[tail];
         elements[tail] = null;
 
         return result;
@@ -107,11 +106,7 @@ public class ArrayQueue {
         POST: R == size && Imm
     */
     public int size() {
-        if (front == tail && !isEmpty()) {
-            return elements.length;
-        } else {
-            return (tail - front + elements.length) % elements.length;
-        }
+        return size;
     }
 
     /*
@@ -119,19 +114,19 @@ public class ArrayQueue {
         POST: R == [size == 0] && Imm
     */
     public boolean isEmpty() {
-        return front == tail && !Objects.nonNull(elements[front]);
+        return size == 0;
     }
 
     /*
         PRED: true
-        POST: size == 0
+        POST: size == 0 && Imm
     */
     public void clear() {
-        for (int i = front; i < tail; i = (i + 1) % elements.length) {
-            elements[i] = null;
+        for (int i = 0; i < size; i++) {
+            elements[(front + i) % elements.length] = null;
         }
-        elements = new Object[1];
-        front = tail = 0;
+        elements = new Object[2];
+        front = size = 0;
     }
 
     /*
@@ -139,15 +134,7 @@ public class ArrayQueue {
         POST: R = [a_1, a_2, ..., a_size] && Imm
     */
     public Object[] toArray() {
-        final int len = size();
-        final Object[] result = new Object[len];
-
-        // :NOTE: Копирование в ручную
-        for (int i = 0; i < len; i++) {
-            result[i] = elements[(i + front) % elements.length];
-        }
-
-        return result;
+        return normalize(elements, front, size, size);
     }
 
     /*
@@ -155,9 +142,6 @@ public class ArrayQueue {
         POST: R = "[a_1, ... , a_size]" && Imm
     */
     public String toStr() {
-        // :NOTE: TODO
-        final String[] result = Arrays.stream(toArray()).map(Object::toString).toArray(String[]::new);
-
-        return '[' + String.join(", ", result) + ']';
+        return toStr(toArray());
     }
 }
