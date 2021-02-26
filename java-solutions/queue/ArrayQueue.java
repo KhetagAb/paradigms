@@ -31,6 +31,18 @@ public class ArrayQueue {
         tail = (tail + 1) % elements.length;
     }
 
+    /*
+        PRED: e != null
+        POST: size = size' + 1 && a[1] = e && Imm: forall i = 2..size': a[i + 1] = a'[i]
+    */
+    public void push(Object element) {
+        Objects.requireNonNull(element);
+
+        ensureCapacity();
+        front = (front - 1 + elements.length) % elements.length;
+        elements[front] = element;
+    }
+
     private void ensureCapacity() {
         if (tail == front && Objects.nonNull(elements[front])) {
             tail = elements.length;
@@ -55,6 +67,16 @@ public class ArrayQueue {
 
     /*
         PRED: size > 0
+        POST: R == a[n] && size = size' && Imm
+    */
+    public Object peek() {
+        assert !isEmpty();
+
+        return elements[(tail - 1 + elements.length) % elements.length];
+    }
+
+    /*
+        PRED: size > 0
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public Object dequeue() {
@@ -63,6 +85,20 @@ public class ArrayQueue {
         Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
+
+        return result;
+    }
+
+    /*
+        PRED: size > 0
+        POST: R == a[n] && size = size' - 1 && forall i = 1..size': a[i] = a'[i]
+    */
+    public Object remove() {
+        assert !isEmpty();
+
+        tail = (tail - 1 + elements.length) % elements.length;
+        Object result = elements[tail];
+        elements[tail] = null;
 
         return result;
     }
@@ -97,5 +133,30 @@ public class ArrayQueue {
         }
         elements = new Object[1];
         front = tail = 0;
+    }
+
+    /*
+        PRED: true
+        POST: R = [a_1, a_2, ..., a_size]
+    */
+    public Object[] toArray() {
+        int len = size();
+        Object[] result = new Object[len];
+
+        for (int i = 0; i < len; i++) {
+            result[i] = elements[(i + front) % elements.length];
+        }
+
+        return result;
+    }
+
+    /*
+        PRED: true
+        POST: R = "[ a_1 , ... , a_size ]"
+    */
+    public String toStr() {
+        String[] result = Arrays.stream(toArray()).map(Object::toString).toArray(String[]::new);
+
+        return '[' + String.join(", ", result) + ']';
     }
 }
