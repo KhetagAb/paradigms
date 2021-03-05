@@ -23,7 +23,7 @@ public class ArrayQueue extends CommonArrayQueue {
         PRED: e != null
         POST: size = size' + 1 && a[size] = e && Imm
     */
-    public void enqueue(Object element) {
+    public void enqueue(final Object element) {
         assert Objects.nonNull(element);
 
         ensureCapacity();
@@ -35,7 +35,7 @@ public class ArrayQueue extends CommonArrayQueue {
         PRED: e != null
         POST: size = size' + 1 && a[1] = e && forall i = 2..size': a[i + 1] = a'[i]
     */
-    public void push(Object element) {
+    public void push(final Object element) {
         assert Objects.nonNull(element);
 
         ensureCapacity();
@@ -79,7 +79,7 @@ public class ArrayQueue extends CommonArrayQueue {
     public Object dequeue() {
         assert !isEmpty();
 
-        Object result = elements[front];
+        final Object result = elements[front];
         elements[front] = null;
         front = (front + 1) % elements.length;
         size--;
@@ -95,8 +95,8 @@ public class ArrayQueue extends CommonArrayQueue {
         assert !isEmpty();
 
         size--;
-        int tail = (front + size) % elements.length;
-        Object result = elements[tail];
+        final int tail = (front + size) % elements.length;
+        final Object result = elements[tail];
         elements[tail] = null;
 
         return result;

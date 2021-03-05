@@ -30,7 +30,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: e != null && queue != null
         POST: size = size' + 1 && a[size] = e && Imm
     */
-    public static void enqueue(ArrayQueueADT queue, Object element) {
+    public static void enqueue(final ArrayQueueADT queue, final Object element) {
         assert Objects.nonNull(element) && Objects.nonNull(queue);
 
         ensureCapacity(queue);
@@ -42,7 +42,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: e != null && queue != null
         POST: size = size' + 1 && a[1] = e && forall i = 2..size': a[i + 1] = a'[i]
     */
-    public static void push(ArrayQueueADT queue, Object element) {
+    public static void push(final ArrayQueueADT queue, final Object element) {
         assert Objects.nonNull(element) && Objects.nonNull(queue);
 
         ensureCapacity(queue);
@@ -51,7 +51,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         queue.size++;
     }
 
-    private static void ensureCapacity(ArrayQueueADT queue) {
+    private static void ensureCapacity(final ArrayQueueADT queue) {
         if (queue.size == queue.elements.length) {
             queue.elements = castToSeries(queue.elements, queue.front, queue.size, queue.elements.length * 2);
 
@@ -63,7 +63,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: size > 0 && queue != null
         POST: R == a[1] && size = size' && Imm
     */
-    public static Object element(ArrayQueueADT queue) {
+    public static Object element(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
         return queue.elements[queue.front];
@@ -73,7 +73,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: size > 0 && queue != null
         POST: R == a[n] && size = size' && Imm
     */
-    public static Object peek(ArrayQueueADT queue) {
+    public static Object peek(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
         return queue.elements[(queue.front + queue.size - 1) % queue.elements.length];
@@ -83,10 +83,10 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: size > 0 && queue != null
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
-    public static Object dequeue(ArrayQueueADT queue) {
+    public static Object dequeue(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
-        Object result = queue.elements[queue.front];
+        final Object result = queue.elements[queue.front];
         queue.elements[queue.front] = null;
         queue.front = (queue.front + 1) % queue.elements.length;
         queue.size--;
@@ -98,12 +98,12 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: size > 0 && queue != null
         POST: R == a[n] && size = size' - 1 && && Imm
     */
-    public static Object remove(ArrayQueueADT queue) {
+    public static Object remove(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
         queue.size--;
-        int tail = (queue.front + queue.size) % queue.elements.length;
-        Object result = queue.elements[tail];
+        final int tail = (queue.front + queue.size) % queue.elements.length;
+        final Object result = queue.elements[tail];
         queue.elements[tail] = null;
 
         return result;
@@ -113,7 +113,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: queue != null
         POST: R == size && size = size' && Imm
     */
-    public static int size(ArrayQueueADT queue) {
+    public static int size(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
         return queue.size;
@@ -123,7 +123,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: queue != null
         POST: R == [size == 0] && size = size' && Imm
     */
-    public static boolean isEmpty(ArrayQueueADT queue) {
+    public static boolean isEmpty(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
         return queue.size == 0;
@@ -133,7 +133,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: queue != null
         POST: size == 0 && size = size' && Imm
     */
-    public static void clear(ArrayQueueADT queue) {
+    public static void clear(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
         Arrays.fill(queue.elements, null);
@@ -145,7 +145,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: queue != null
         POST: R = [a_1, a_2, ..., a_size] && size = size' && Imm
     */
-    public static Object[] toArray(ArrayQueueADT queue) {
+    public static Object[] toArray(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
         return castToSeries(queue.elements, queue.front, queue.size, queue.size);
@@ -155,7 +155,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         PRED: queue != null
         POST: R = "[a_1, ... , a_size]" && size = size' && Imm
     */
-    public static String toStr(ArrayQueueADT queue) {
+    public static String toStr(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
         return Arrays.toString(toArray(queue));
