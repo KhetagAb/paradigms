@@ -136,9 +136,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static void clear(ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
-        for (int i = 0; i < queue.size; i++) {
-            queue.elements[(queue.front + i) % queue.elements.length] = null;
-        }
+        Arrays.fill(queue.elements, null);
         queue.elements = new Object[2];
         queue.front = queue.size = 0;
     }

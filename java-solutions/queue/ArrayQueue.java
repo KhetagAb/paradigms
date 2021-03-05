@@ -123,9 +123,7 @@ public class ArrayQueue extends CommonArrayQueue {
         POST: size == 0 && size = size' && Imm
     */
     public void clear() {
-        for (int i = 0; i < size; i++) {
-            elements[(front + i) % elements.length] = null;
-        }
+        Arrays.fill(elements, null);
         elements = new Object[2];
         front = size = 0;
     }
