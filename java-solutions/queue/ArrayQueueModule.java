@@ -1,5 +1,6 @@
 package queue;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class ArrayQueueModule extends CommonArrayQueue {
@@ -45,7 +46,7 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     private static void ensureCapacity() {
         if (size == elements.length) {
-            elements = normalize(elements, front, size, elements.length * 2);
+            elements = castToSeries(elements, front, size, elements.length * 2);
 
             front = 0;
         }
@@ -73,7 +74,7 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     /*
         PRED: size > 0
-        POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
+        POST: R == a[1] && size = size' - 1 && Imm
     */
     public static Object dequeue() {
         assert !isEmpty();
@@ -103,7 +104,7 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     /*
         PRED: true
-        POST: R == size && Imm
+        POST: R == size && size = size' && Imm
     */
     public static int size() {
         return size;
@@ -111,7 +112,7 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     /*
         PRED: true
-        POST: R == [size == 0] && Imm
+        POST: R == [size == 0] && size = size' && Imm
     */
     public static boolean isEmpty() {
         return size == 0;
@@ -119,7 +120,7 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     /*
         PRED: true
-        POST: size == 0 && Imm
+        POST: size == 0 && size = size' && Imm
     */
     public static void clear() {
         for (int i = 0; i < size; i++) {
@@ -131,17 +132,17 @@ public class ArrayQueueModule extends CommonArrayQueue {
 
     /*
         PRED: true
-        POST: R = [a_1, a_2, ..., a_size] && Imm
+        POST: R = [a_1, a_2, ..., a_size] && size = size' && Imm
     */
     public static Object[] toArray() {
-        return normalize(elements, front, size, size);
+        return castToSeries(elements, front, size, size);
     }
 
     /*
         PRED: true
-        POST: R = "[a_1, ... , a_size]" && Imm
+        POST: R = "[a_1, ... , a_size]" && size = size' && Imm
     */
     public static String toStr() {
-        return CommonArrayQueue.toStr(toArray());
+        return Arrays.toString(toArray());
     }
 }

@@ -1,5 +1,6 @@
 package queue;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class ArrayQueueADT extends CommonArrayQueue {
@@ -52,7 +53,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
     private static void ensureCapacity(ArrayQueueADT queue) {
         if (queue.size == queue.elements.length) {
-            queue.elements = normalize(queue.elements, queue.front, queue.size, queue.elements.length * 2);
+            queue.elements = castToSeries(queue.elements, queue.front, queue.size, queue.elements.length * 2);
 
             queue.front = 0;
         }
@@ -63,7 +64,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         POST: R == a[1] && size = size' && Imm
     */
     public static Object element(ArrayQueueADT queue) {
-        assert !isEmpty(queue);
+        assert Objects.nonNull(queue) && !isEmpty(queue);
 
         return queue.elements[queue.front];
     }
@@ -73,7 +74,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         POST: R == a[n] && size = size' && Imm
     */
     public static Object peek(ArrayQueueADT queue) {
-        assert !isEmpty(queue);
+        assert Objects.nonNull(queue) && !isEmpty(queue);
 
         return queue.elements[(queue.front + queue.size - 1) % queue.elements.length];
     }
@@ -83,7 +84,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         POST: R == a[1] && size = size' - 1 && forall i = 1..size: a[i] = a'[i + 1]
     */
     public static Object dequeue(ArrayQueueADT queue) {
-        assert !isEmpty(queue);
+        assert Objects.nonNull(queue) && !isEmpty(queue);
 
         Object result = queue.elements[queue.front];
         queue.elements[queue.front] = null;
@@ -95,10 +96,10 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
     /*
         PRED: size > 0 && queue != null
-        POST: R == a[n] && size = size' - 1 && forall i = 1..size': a[i] = a'[i]
+        POST: R == a[n] && size = size' - 1 && && Imm
     */
     public static Object remove(ArrayQueueADT queue) {
-        assert !isEmpty(queue);
+        assert Objects.nonNull(queue) && !isEmpty(queue);
 
         queue.size--;
         int tail = (queue.front + queue.size) % queue.elements.length;
@@ -110,25 +111,31 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
     /*
         PRED: queue != null
-        POST: R == size && Imm
+        POST: R == size && size = size' && Imm
     */
     public static int size(ArrayQueueADT queue) {
+        assert Objects.nonNull(queue);
+
         return queue.size;
     }
 
     /*
-        PRED: true
-        POST: R == [size == 0] && Imm
+        PRED: queue != null
+        POST: R == [size == 0] && size = size' && Imm
     */
     public static boolean isEmpty(ArrayQueueADT queue) {
+        assert Objects.nonNull(queue);
+
         return queue.size == 0;
     }
 
     /*
         PRED: queue != null
-        POST: size == 0 && Imm
+        POST: size == 0 && size = size' && Imm
     */
     public static void clear(ArrayQueueADT queue) {
+        assert Objects.nonNull(queue);
+
         for (int i = 0; i < queue.size; i++) {
             queue.elements[(queue.front + i) % queue.elements.length] = null;
         }
@@ -138,17 +145,21 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
     /*
         PRED: queue != null
-        POST: R = [a_1, a_2, ..., a_size] && Imm
+        POST: R = [a_1, a_2, ..., a_size] && size = size' && Imm
     */
     public static Object[] toArray(ArrayQueueADT queue) {
-        return normalize(queue.elements, queue.front, queue.size, queue.size);
+        assert Objects.nonNull(queue);
+
+        return castToSeries(queue.elements, queue.front, queue.size, queue.size);
     }
 
     /*
         PRED: queue != null
-        POST: R = "[a_1, ... , a_size]" && Imm
+        POST: R = "[a_1, ... , a_size]" && size = size' && Imm
     */
     public static String toStr(ArrayQueueADT queue) {
-        return CommonArrayQueue.toStr(toArray(queue));
+        assert Objects.nonNull(queue);
+
+        return Arrays.toString(toArray(queue));
     }
 }
