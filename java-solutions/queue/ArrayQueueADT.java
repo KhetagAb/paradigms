@@ -16,7 +16,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         Let Imm: forall i = 1..size': a[i] = a'[i]
     */
 
-    private int front = 0, size = 0;
+    private int head = 0, size = 0;
     private Object[] elements = new Object[2];
 
     /*
@@ -34,7 +34,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         assert Objects.nonNull(element) && Objects.nonNull(queue);
 
         ensureCapacity(queue);
-        queue.elements[(queue.front + queue.size) % queue.elements.length] = element;
+        queue.elements[(queue.head + queue.size) % queue.elements.length] = element;
         queue.size++;
     }
 
@@ -46,16 +46,16 @@ public class ArrayQueueADT extends CommonArrayQueue {
         assert Objects.nonNull(element) && Objects.nonNull(queue);
 
         ensureCapacity(queue);
-        queue.front = (queue.front - 1 + queue.elements.length) % queue.elements.length;
-        queue.elements[queue.front] = element;
+        queue.head = (queue.head - 1 + queue.elements.length) % queue.elements.length;
+        queue.elements[queue.head] = element;
         queue.size++;
     }
 
     private static void ensureCapacity(final ArrayQueueADT queue) {
         if (queue.size == queue.elements.length) {
-            queue.elements = castToSeries(queue.elements, queue.front, queue.size, queue.elements.length * 2);
+            queue.elements = castToSeries(queue.elements, queue.head, queue.size, queue.elements.length * 2);
 
-            queue.front = 0;
+            queue.head = 0;
         }
     }
 
@@ -66,7 +66,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static Object element(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
-        return queue.elements[queue.front];
+        return queue.elements[queue.head];
     }
 
     /*
@@ -76,7 +76,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static Object peek(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
-        return queue.elements[(queue.front + queue.size - 1) % queue.elements.length];
+        return queue.elements[(queue.head + queue.size - 1) % queue.elements.length];
     }
 
     /*
@@ -86,9 +86,9 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static Object dequeue(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
-        final Object result = queue.elements[queue.front];
-        queue.elements[queue.front] = null;
-        queue.front = (queue.front + 1) % queue.elements.length;
+        final Object result = queue.elements[queue.head];
+        queue.elements[queue.head] = null;
+        queue.head = (queue.head + 1) % queue.elements.length;
         queue.size--;
 
         return result;
@@ -102,7 +102,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
         assert Objects.nonNull(queue) && !isEmpty(queue);
 
         queue.size--;
-        final int tail = (queue.front + queue.size) % queue.elements.length;
+        final int tail = (queue.head + queue.size) % queue.elements.length;
         final Object result = queue.elements[tail];
         queue.elements[tail] = null;
 
@@ -138,7 +138,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
         Arrays.fill(queue.elements, null);
         queue.elements = new Object[2];
-        queue.front = queue.size = 0;
+        queue.head = queue.size = 0;
     }
 
     /*
@@ -148,7 +148,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static Object[] toArray(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
-        return castToSeries(queue.elements, queue.front, queue.size, queue.size);
+        return castToSeries(queue.elements, queue.head, queue.size, queue.size);
     }
 
     /*

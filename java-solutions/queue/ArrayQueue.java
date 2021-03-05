@@ -16,7 +16,7 @@ public class ArrayQueue extends CommonArrayQueue {
         Let Imm: forall i = 1..size': a[i] = a'[i]
     */
 
-    private int front = 0, size = 0;
+    private int head = 0, size = 0;
     private Object[] elements = new Object[2];
 
     /*
@@ -27,7 +27,7 @@ public class ArrayQueue extends CommonArrayQueue {
         assert Objects.nonNull(element);
 
         ensureCapacity();
-        elements[(front + size) % elements.length] = element;
+        elements[(head + size) % elements.length] = element;
         size++;
     }
 
@@ -39,16 +39,16 @@ public class ArrayQueue extends CommonArrayQueue {
         assert Objects.nonNull(element);
 
         ensureCapacity();
-        front = (front - 1 + elements.length) % elements.length;
-        elements[front] = element;
+        head = (head - 1 + elements.length) % elements.length;
+        elements[head] = element;
         size++;
     }
 
     private void ensureCapacity() {
         if (size == elements.length) {
-            elements = castToSeries(elements, front, size, elements.length * 2);
+            elements = castToSeries(elements, head, size, elements.length * 2);
 
-            front = 0;
+            head = 0;
         }
     }
 
@@ -59,7 +59,7 @@ public class ArrayQueue extends CommonArrayQueue {
     public Object element() {
         assert !isEmpty();
 
-        return elements[front];
+        return elements[head];
     }
 
     /*
@@ -69,7 +69,7 @@ public class ArrayQueue extends CommonArrayQueue {
     public Object peek() {
         assert !isEmpty();
 
-        return elements[(front + size - 1) % elements.length];
+        return elements[(head + size - 1) % elements.length];
     }
 
     /*
@@ -79,9 +79,9 @@ public class ArrayQueue extends CommonArrayQueue {
     public Object dequeue() {
         assert !isEmpty();
 
-        final Object result = elements[front];
-        elements[front] = null;
-        front = (front + 1) % elements.length;
+        final Object result = elements[head];
+        elements[head] = null;
+        head = (head + 1) % elements.length;
         size--;
 
         return result;
@@ -95,7 +95,7 @@ public class ArrayQueue extends CommonArrayQueue {
         assert !isEmpty();
 
         size--;
-        final int tail = (front + size) % elements.length;
+        final int tail = (head + size) % elements.length;
         final Object result = elements[tail];
         elements[tail] = null;
 
@@ -125,7 +125,7 @@ public class ArrayQueue extends CommonArrayQueue {
     public void clear() {
         Arrays.fill(elements, null);
         elements = new Object[2];
-        front = size = 0;
+        head = size = 0;
     }
 
     /*
@@ -133,7 +133,7 @@ public class ArrayQueue extends CommonArrayQueue {
         POST: R = [a_1, a_2, ..., a_size] && size = size' && Imm
     */
     public Object[] toArray() {
-        return castToSeries(elements, front, size, size);
+        return castToSeries(elements, head, size, size);
     }
 
     /*
