@@ -3,7 +3,7 @@ package queue;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class ArrayQueueADT extends CommonArrayQueue {
+public class ArrayQueueADT {
     /*
         MODEL:
             [a_1, a_2, ..., a_size]
@@ -53,7 +53,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
 
     private static void ensureCapacity(final ArrayQueueADT queue) {
         if (queue.size == queue.elements.length) {
-            queue.elements = castToSeries(queue.elements, queue.head, queue.size, queue.elements.length * 2);
+            queue.elements = CommonArrayQueue.castToSeries(queue.elements, queue.head, queue.size, queue.elements.length * 2);
 
             queue.head = 0;
         }
@@ -148,7 +148,7 @@ public class ArrayQueueADT extends CommonArrayQueue {
     public static Object[] toArray(final ArrayQueueADT queue) {
         assert Objects.nonNull(queue);
 
-        return castToSeries(queue.elements, queue.head, queue.size, queue.size);
+        return CommonArrayQueue.castToSeries(queue.elements, queue.head, queue.size, queue.size);
     }
 
     /*
