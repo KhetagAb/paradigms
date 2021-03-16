@@ -1,62 +1,28 @@
 package queue;
 
-import java.util.Arrays;
-import java.util.Objects;
-
 public abstract class AbstractQueue implements Queue {
     protected int size = 0;
 
     protected abstract void enqueueImpl(final Object element);
     protected abstract void dequeueImpl();
-    protected abstract void pushImpl(final Object element);
-    protected abstract void removeImpl();
     protected abstract void clearImpl();
-
-    @FunctionalInterface
-    private interface Removing {
-        void act();
-    }
-
-    @FunctionalInterface
-    private interface Adding {
-        void act(final Object element);
-    }
-
-    protected Object removing(final Removing func) {
-        assert !isEmpty();
-        final Object result = element();
-        size--;
-
-        func.act();
-
-        return result;
-    }
-
-    protected void adding(final Adding func, final Object element) {
-        assert Objects.nonNull(element);
-        size++;
-
-        func.act(element);
-    }
+    protected abstract Queue createQueue();
 
     @Override
     public void enqueue(final Object element) {
-        adding(this::enqueueImpl, element);
-    }
+        size++;
 
-    @Override
-    public void push(final Object element) {
-        adding(this::pushImpl, element);
+        enqueueImpl(element);
     }
 
     @Override
     public Object dequeue() {
-        return removing(this::dequeueImpl);
-    }
+        final Object result = element();
+        size--;
 
-    @Override
-    public Object remove() {
-        return removing(this::removeImpl);
+        dequeueImpl();
+
+        return result;
     }
 
     @Override
@@ -69,15 +35,43 @@ public abstract class AbstractQueue implements Queue {
         return size == 0;
     }
 
+    private Queue nth(int n, boolean drop, boolean inPlace) {
+        Queue queue = inPlace ? null : createQueue();
+        int size = size();
+        for (int i = 0; i < size; i++) {
+            Object element = dequeue();
+            if ((i + 1) % n == 0) {
+                if (!inPlace) {
+                    queue.enqueue(element);
+                }
+                if (drop) {
+                    continue;
+                }
+            }
+            enqueue(element);
+        }
+        return queue;
+    }
+
+    @Override
+    public Queue getNth(int n) {
+        return nth(n, false, false);
+    }
+
+    @Override
+    public void dropNth(int n) {
+        nth(n, true, true);
+    }
+
+    @Override
+    public Queue removeNth(int n) {
+        return nth(n, true, false);
+    }
+
     @Override
     public void clear() {
         size = 0;
 
         clearImpl();
-    }
-
-    @Override
-    public String toStr() {
-        return Arrays.toString(toArray());
     }
 }

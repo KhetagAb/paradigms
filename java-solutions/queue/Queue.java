@@ -28,31 +28,10 @@ public interface Queue {
 
 
     /*
-        PRED: element != null
-        POST: size = size' + 1 && a[1] = element && forall i = 2..size': a[i + 1] = a'[i]
-    */
-    void push(final Object element);
-
-
-    /*
-        PRED: size > 0
-        POST: R == a[n] && size = size' - 1 && Imm
-    */
-    Object remove();
-
-
-    /*
         PRED: size > 0
         POST: R == a[1] && size = size' && Imm
     */
     Object element();
-
-
-    /*
-        PRED: size > 0
-        POST: R == a[n] && size = size' && Imm
-    */
-    Object peek();
 
 
     /*
@@ -76,16 +55,9 @@ public interface Queue {
     void clear();
 
 
-    /*
-        PRED: true
-        POST: R = [a_1, a_2, ..., a_size] && size = size' && Imm
-    */
-    Object[] toArray();
+    Queue getNth(int n);
 
+    Queue removeNth(int n);
 
-    /*
-        PRED: true
-        POST: R = "[a_1, ... , a_size]" && size = size' && Imm
-    */
-    String toStr();
+    void dropNth(int n);
 }

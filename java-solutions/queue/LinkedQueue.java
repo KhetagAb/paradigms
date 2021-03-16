@@ -10,7 +10,7 @@ public class LinkedQueue extends AbstractQueue {
         if (Objects.isNull(tail)) {
             tail = head = new Node(element);
         } else {
-            tail = tail.joinNext(new Node(element));
+            tail = tail.next = new Node(element);
         }
     }
 
@@ -19,40 +19,13 @@ public class LinkedQueue extends AbstractQueue {
         if (size == 0) {
             head = tail = null;
         } else {
-            head = head.switchToNext();
-        }
-    }
-
-    @Override
-    protected void pushImpl(final Object element) {
-        if (Objects.isNull(head)) {
-            tail = head = new Node(element);
-        } else {
-            head = head.joinPrev(new Node(element));
-        }
-    }
-
-    @Override
-    protected void removeImpl() {
-        if (size == 0) {
-            head = tail = null;
-        } else {
-            tail = tail.switchToPrev();
+            head = head.next;
         }
     }
 
     @Override
     public Object element() {
-        assert !isEmpty();
-
         return head.getElement();
-    }
-
-    @Override
-    public Object peek() {
-        assert !isEmpty();
-
-        return tail.getElement();
     }
 
     @Override
@@ -61,49 +34,16 @@ public class LinkedQueue extends AbstractQueue {
     }
 
     @Override
-    public Object[] toArray() {
-        final Object[] array = new Object[size];
-
-        int i = 0;
-        for (Node node = head; Objects.nonNull(node.next); node = node.next) {
-            array[i++] = node.element;
-        }
-
-        return array;
+    protected Queue createQueue() {
+        return new LinkedQueue();
     }
 
     private static class Node {
-        private Node next = this, prev = this;
+        private Node next = this;
         private final Object element;
 
         private Node(Object element) {
             this.element = element;
-        }
-
-        private Node joinNext(final Node next) {
-            assert Objects.nonNull(next);
-
-            this.next = next;
-            next.prev = this;
-
-            return next;
-        }
-
-        private Node joinPrev(final Node prev) {
-            assert Objects.nonNull(prev);
-
-            this.prev = prev;
-            prev.next = this;
-
-            return prev;
-        }
-
-        private Node switchToNext() {
-            return next.prev = next;
-        }
-
-        private Node switchToPrev() {
-            return prev.next = prev;
         }
 
         private Object getElement() {

@@ -18,18 +18,6 @@ public class ArrayQueue extends AbstractQueue {
         head = (head + 1) % elements.length;
     }
 
-    @Override
-    protected void pushImpl(final Object element) {
-        ensureCapacity();
-        head = (head + elements.length - 1) % elements.length;
-        elements[head] = element;
-    }
-
-    @Override
-    protected void removeImpl() {
-        elements[(head + size) % elements.length] = null;
-    }
-
     private void ensureCapacity() {
         if (size == elements.length) {
             elements = CommonArrayQueue.castToSeries(elements, head, size, elements.length * 2);
@@ -40,16 +28,7 @@ public class ArrayQueue extends AbstractQueue {
 
     @Override
     public Object element() {
-        assert !isEmpty();
-
         return elements[head];
-    }
-
-    @Override
-    public Object peek() {
-        assert !isEmpty();
-
-        return elements[(head + size - 1) % elements.length];
     }
 
     @Override
@@ -61,12 +40,7 @@ public class ArrayQueue extends AbstractQueue {
     }
 
     @Override
-    public Object[] toArray() {
-        return CommonArrayQueue.castToSeries(elements, head, size, size);
-    }
-
-    @Override
-    public String toStr() {
-        return Arrays.toString(toArray());
+    protected Queue createQueue() {
+        return new ArrayQueue();
     }
 }
