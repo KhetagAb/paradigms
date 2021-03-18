@@ -3,7 +3,7 @@ package expression.generic;
 import expression.exceptions.DivideByZeroException;
 import expression.exceptions.ExpressionOverflowException;
 
-public class CheckedIntegerCalculator extends GenericCalculator<Integer> {
+public class CheckedIntegerCalculator extends IntegerCalculator {
     @Override
     public Integer add(Integer left, Integer right) {
         if (left > 0 && Integer.MAX_VALUE - left < right ||
@@ -43,15 +43,6 @@ public class CheckedIntegerCalculator extends GenericCalculator<Integer> {
         }
 
         return left / right;
-    }
-
-    @Override
-    public Integer mod(Integer left, Integer right) {
-        if (right == 0) {
-            throw new DivideByZeroException(left + " divide 0");
-        }
-
-        return left % right;
     }
 
     @Override
