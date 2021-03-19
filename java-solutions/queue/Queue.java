@@ -12,6 +12,8 @@ public interface Queue {
 
         Let Imm: forall i = 1..size': a[i] = a'[i]
         // :NOTE: Не сходится
+
+
         Let Nth: forall i = 1..size: a[i] = a'[i + (i - 1) / (n - 1)]
     */
 
@@ -45,7 +47,7 @@ public interface Queue {
 
     /*
         PRED: true
-        POST: R == [size == 0] && size = size' && Imm
+        POST: R == {size == 0} && size = size' && Imm
     */
     boolean isEmpty();
 
@@ -66,13 +68,13 @@ public interface Queue {
 
     /*
         PRED: n > 0
-        POST: R == [a'[1 * n], a'[2 * n], ..., a'[[size / n]] && size = size' - [size' / n] && Nth
+        POST: R == [a'[1 * n], a'[2 * n], ..., a'[size / n]] && size = size' - (size' / n) && Nth
     */
     Queue removeNth(int n);
 
     /*
         PRED: n > 0
-        POST: size = size' - [size' / n] && Nth
+        POST: size = size' - (size' / n) && Nth
     */
     void dropNth(int n);
 }
