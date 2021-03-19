@@ -2,7 +2,7 @@ package expression;
 
 import expression.generic.Calculator;
 
-public class Const<T extends Number> implements Expression<T> {
+public class Const<T> implements Expression<T> {
     protected final Calculator<T> calculator;
     private final T value;
 

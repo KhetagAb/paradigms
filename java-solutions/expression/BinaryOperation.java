@@ -2,7 +2,7 @@ package expression;
 
 import expression.generic.Calculator;
 
-public abstract class BinaryOperation<T extends Number> extends Operation<T> {
+public abstract class BinaryOperation<T> extends Operation<T> {
     protected final Expression<T> left, right;
 
     protected abstract T operate(T left, T right);

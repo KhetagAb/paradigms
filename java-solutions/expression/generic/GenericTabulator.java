@@ -20,6 +20,15 @@ public class GenericTabulator implements Tabulator {
             case "bi":
                 calculator = new BigIntegerCalculator();
                 break;
+            case "u":
+                calculator = new IntegerCalculator();
+                break;
+            case "b":
+                calculator = new ByteCalculator();
+                break;
+            case "f":
+                calculator = new FloatCalculator();
+                break;
             default:
                 throw new IllegalStateException("Unknown mode: " + mode);
         }
@@ -32,7 +41,7 @@ public class GenericTabulator implements Tabulator {
                 for (int k = 0; z1 + k <= z2; k++) {
                     try {
                         result[i][j][k] = ex.evaluate( x1 + i, y1 + j, z1 + k);
-                    } catch (ExpressionException e) {
+                    } catch (ArithmeticException | ExpressionException e) {
                         result[i][j][k] = null;
                     }
                 }
@@ -48,7 +57,7 @@ public class GenericTabulator implements Tabulator {
         }
 
         String mode = args[0], expression = args[1];
-        if ((!mode.equals("-i") && !mode.equals("-d") && !mode.equals("-bi")) || expression == null) {
+        if ((!mode.equals("-u") && !mode.equals("-b") && !mode.equals("-f") && !mode.equals("-i") && !mode.equals("-d") && !mode.equals("-bi")) || expression == null) {
             throw new IllegalStateException("Invalid parameters found. Available modes [-i, -d, -bi]. Non-null expression required");
         } else {
             mode = mode.substring(1);

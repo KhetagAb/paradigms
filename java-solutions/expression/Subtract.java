@@ -2,7 +2,7 @@ package expression;
 
 import expression.generic.Calculator;
 
-public class Subtract<T extends Number> extends BinaryOperation<T> {
+public class Subtract<T> extends BinaryOperation<T> {
     public Subtract(Expression<T> left, Expression<T> right, Calculator<T> calculator) {
         super(left, right, calculator);
     }

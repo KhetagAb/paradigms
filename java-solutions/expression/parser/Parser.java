@@ -6,6 +6,6 @@ import expression.exceptions.ParserException;
 /**
  * @author Georgiy Korneev (kgeorgiy@kgeorgiy.info)
  */
-public interface Parser<T extends Number> {
+public interface Parser<T> {
     Expression<T> parse(String expression) throws ParserException;
 }

@@ -8,12 +8,12 @@ import expression.generic.Calculator;
 
 import java.util.*;
 
-public abstract class AbstractExpressionParser<T extends Number> extends BaseParser {
+public abstract class AbstractExpressionParser<T, C extends Calculator<T>> extends BaseParser {
     protected final TrieExpression tokens = new TrieExpression();
     protected final Map<Character, Character> brackets = new HashMap<>();
 
     private int maxRank;
-    private Calculator<T> calculator;
+    private C calculator;
     private final Map<String, Integer> operatorToRank = new HashMap<>();
     private final Map<String, BinaryFactory<T>> binaryFactories = new HashMap<>();
     private final Map<String, UnaryFactory<T>> unaryFactories = new HashMap<>();
@@ -22,7 +22,7 @@ public abstract class AbstractExpressionParser<T extends Number> extends BasePar
                               final Map<String, UnaryFactory<T>> unaryOperators,
                               final List<String> variables,
                               final Map<Character, Character> brackets,
-                              final Calculator<T> calculator) {
+                              final C calculator) {
         this.brackets.putAll(brackets);
 
         int maxRank = 0;
@@ -223,11 +223,11 @@ public abstract class AbstractExpressionParser<T extends Number> extends BasePar
 }
 
 @FunctionalInterface
-interface BinaryFactory<T extends Number> {
+interface BinaryFactory<T> {
     Expression<T> get(Expression<T> left, Expression<T> right, Calculator<T> calculator);
 }
 
 @FunctionalInterface
-interface UnaryFactory<T extends Number> {
+interface UnaryFactory<T> {
     Expression<T> get(Expression<T> left, Calculator<T> calculator);
 }

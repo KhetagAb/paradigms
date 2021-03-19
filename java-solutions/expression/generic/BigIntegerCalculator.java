@@ -4,7 +4,7 @@ import expression.exceptions.DivideByZeroException;
 
 import java.math.BigInteger;
 
-public class BigIntegerCalculator extends Calculator<BigInteger> {
+public class BigIntegerCalculator extends GenericCalculator<BigInteger> {
     @Override
     public BigInteger add(BigInteger left, BigInteger right) {
         return left.add(right);
@@ -29,8 +29,22 @@ public class BigIntegerCalculator extends Calculator<BigInteger> {
     }
 
     @Override
+    public BigInteger mod(BigInteger left, BigInteger right) {
+        if (right.equals(BigInteger.ZERO)) {
+            throw new DivideByZeroException(left + " divide 0");
+        }
+
+        return left.mod(right);
+    }
+
+    @Override
     public BigInteger negate(BigInteger value) {
         return value.negate();
+    }
+
+    @Override
+    public BigInteger zero() {
+        return BigInteger.ZERO;
     }
 
     @Override
@@ -41,5 +55,10 @@ public class BigIntegerCalculator extends Calculator<BigInteger> {
     @Override
     public BigInteger valueOf(String value) {
         return new BigInteger(value);
+    }
+
+    @Override
+    public int compare(BigInteger o1, BigInteger o2) {
+        return o1.compareTo(o2);
     }
 }
