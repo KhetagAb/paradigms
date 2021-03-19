@@ -35,11 +35,11 @@ public abstract class AbstractQueue implements Queue {
         return size == 0;
     }
 
-    private Queue nth(int n, boolean drop, boolean inPlace) {
-        Queue queue = inPlace ? null : createQueue();
-        int size = size();
+    private Queue nth(final int n, final boolean drop, final boolean inPlace) {
+        final Queue queue = inPlace ? null : createQueue();
+        final int size = size();
         for (int i = 0; i < size; i++) {
-            Object element = dequeue();
+            final Object element = dequeue();
             if ((i + 1) % n == 0) {
                 if (!inPlace) {
                     queue.enqueue(element);
@@ -54,17 +54,17 @@ public abstract class AbstractQueue implements Queue {
     }
 
     @Override
-    public Queue getNth(int n) {
+    public Queue getNth(final int n) {
         return nth(n, false, false);
     }
 
     @Override
-    public void dropNth(int n) {
+    public void dropNth(final int n) {
         nth(n, true, true);
     }
 
     @Override
-    public Queue removeNth(int n) {
+    public Queue removeNth(final int n) {
         return nth(n, true, false);
     }
 

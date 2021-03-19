@@ -1,13 +1,11 @@
 package queue;
 
-import java.util.Objects;
-
 public class LinkedQueue extends AbstractQueue {
-    private Node head = null, tail = null;
+    private Node head = null, tail;
 
     @Override
     protected void enqueueImpl(final Object element) {
-        if (Objects.isNull(tail)) {
+        if (tail == null) {
             tail = head = new Node(element);
         } else {
             tail = tail.next = new Node(element);
@@ -39,10 +37,10 @@ public class LinkedQueue extends AbstractQueue {
     }
 
     private static class Node {
-        private Node next = this;
+        private Node next;
         private final Object element;
 
-        private Node(Object element) {
+        private Node(final Object element) {
             this.element = element;
         }
 
