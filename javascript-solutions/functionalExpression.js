@@ -1,12 +1,13 @@
 "use strict";
 
 const cnst = value => () => value;
-const variable = name => (...vars) => vars[var_indexes[name]]
+// :NOTE: Повторная работа
+const variable = name => (...vars) => vars[varIndexes[name]]
 
 let one = cnst(1)
 let two = cnst(2)
 
-const operation = f => (... exps) => (...vars) => f(...exps.map((ex => ex(...vars))))
+const operation = f => (... exps) => (...vars) => f(...exps.map(ex => ex(...vars)))
 const add = operation((x, y) => x + y)
 const subtract = operation((x, y) => x - y)
 const multiply = operation((x, y) => x * y)
@@ -21,7 +22,7 @@ const cnsts = {
     "two": two
 }
 
-const var_indexes = {
+const varIndexes = {
     'x': 0,
     'y': 1,
     'z': 2
@@ -46,7 +47,7 @@ const parse = input => {
         let top
         if (token in operators) {
             top = operators[token][1](...stack.splice(stack.length - operators[token][0]))
-        } else if (token in var_indexes) {
+        } else if (token in varIndexes) {
             top = variable(token)
         } else if (token in cnsts) {
             top = cnsts[token]
