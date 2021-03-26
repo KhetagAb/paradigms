@@ -116,7 +116,7 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         skipWhitespace();
         String parsed = prefix + parseToken(BaseParser::isDigit);
         try {
-            return new Const<>(parsed, calculator);
+            return new Const<>(calculator.valueOf(parsed));
         } catch (NumberFormatException e) {
             throw invalidTokenException(Types.CONST, parsed);
         }

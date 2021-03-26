@@ -1,14 +1,10 @@
 package expression;
 
-import expression.generic.Calculator;
-
 public class Const<T> implements Expression<T> {
-    protected final Calculator<T> calculator;
     private final T value;
 
-    public Const(String value, Calculator<T> calculator) {
-        this.calculator = calculator;
-        this.value = calculator.valueOf(value);
+    public Const(T value) {
+        this.value = value;
     }
 
     @Override
