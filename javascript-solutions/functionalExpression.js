@@ -7,10 +7,9 @@ const varIndexes = {
 }
 
 const cnst = value => () => value;
-// :NOTE: Повторная работа
 const variable = name => {
-    let ind = varIndexes[name]
-    return (...vars) => vars[ind]
+    const index = varIndexes[name]
+    return (...vars) => vars[index]
 }
 
 let one = cnst(1)
@@ -24,7 +23,7 @@ const divide = operation((x, y) => x / y)
 const negate = operation(x => -x)
 const floor = operation(Math.floor)
 const ceil = operation(Math.ceil)
-const madd = operation((x, y, z) => (x * y) + z)
+const madd = operation((x, y, z) => x * y + z)
 
 const cnsts = {
     "one": one,
