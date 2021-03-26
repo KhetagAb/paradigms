@@ -1,5 +1,11 @@
 "use strict";
 
+const varIndexes = {
+    'x': 0,
+    'y': 1,
+    'z': 2
+}
+
 const cnst = value => () => value;
 // :NOTE: Повторная работа
 const variable = name => {
@@ -23,12 +29,6 @@ const madd = operation((x, y, z) => (x * y) + z)
 const cnsts = {
     "one": one,
     "two": two
-}
-
-const varIndexes = {
-    'x': 0,
-    'y': 1,
-    'z': 2
 }
 
 const operators = {
