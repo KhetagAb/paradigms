@@ -2,7 +2,10 @@
 
 const cnst = value => () => value;
 // :NOTE: Повторная работа
-const variable = name => (...vars) => vars[varIndexes[name]]
+const variable = name => {
+    let ind = varIndexes[name]
+    return (...vars) => vars[ind]
+}
 
 let one = cnst(1)
 let two = cnst(2)
