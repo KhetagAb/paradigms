@@ -49,7 +49,8 @@ const parse = input => {
     return input.split(" ").filter(e => e !== "").reduce((stack, token) => {
         let top
         if (token in operators) {
-            top = operators[token][1](...stack.splice(stack.length - operators[token][0]))
+            let oper = operators[token]
+            top = oper[1](...stack.splice(stack.length - oper[0]))
         } else if (token in varIndexes) {
             top = variable(token)
         } else if (token in cnsts) {
