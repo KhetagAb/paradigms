@@ -15,7 +15,7 @@ const variable = name => {
 let one = cnst(1)
 let two = cnst(2)
 
-const operation = f => (... exps) => (...vars) => f(...exps.map(ex => ex(...vars)))
+const operation = f => (... exps) => (...vars) => f(... exps.map(ex => ex(...vars)))
 const add = operation((x, y) => x + y)
 const subtract = operation((x, y) => x - y)
 const multiply = operation((x, y) => x * y)
