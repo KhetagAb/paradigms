@@ -1,10 +1,13 @@
 "use strict";
 
+const zero = new Const(0)
+const one = new Const(1)
+
 function Const(val) {
     const value = val
     return {
         evaluate:   () => value,
-        diff:       () => new Const(0),
+        diff:       () => zero,
         toString:   () => value.toString()
     }
 }
@@ -19,7 +22,7 @@ function Variable(name) {
     const index = varIndexes[name]
     return {
         evaluate:   (...vars) => vars[index],
-        diff:       (variable) => varIndexes[variable] === index ? new Const(1) : new Const(0),
+        diff:       (variable) => varIndexes[variable] === index ? one : zero,
         toString:   () => name
     }
 }
@@ -73,6 +76,24 @@ operatorPrototypeInit(Divide,
     (x, y) => x / y,
     d => (x, y) => new Divide(new Subtract(new Multiply(x.diff(d), y), new Multiply(y.diff(d), x)), new Multiply(y, y)))
 
+function Hypot(left, right) {
+    Operator.call(this, left, right)
+}
+operatorPrototypeInit(Hypot,
+    "hypot",
+    (x, y) => x * x + y * y,
+    d => (x, y) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d)
+)
+
+function HMean(left, right) {
+    Operator.call(this, left, right)
+}
+operatorPrototypeInit(HMean,
+    "hmean",
+    (x, y) => 2 / (1 / x + 1 / y),
+    d => (x, y) => new Divide(new Const(2), new Add(new Divide(one, x), new Divide(one, y))).diff(d)
+)
+
 function Negate(value) {
     Operator.call(this, value);
 }
@@ -87,6 +108,8 @@ const operators = {
     '*': Multiply,
     '/': Divide,
     'negate': Negate,
+    'hypot': Hypot,
+    'hmean': HMean
 }
 
 const parse = input => {
