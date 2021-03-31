@@ -87,7 +87,7 @@ operatorPrototypeInit(Hypot,
 
 function HMean(left, right) {
     Operator.call(this, left, right)
-}
+}4
 operatorPrototypeInit(HMean,
     "hmean",
     (x, y) => 2 / (1 / x + 1 / y),
