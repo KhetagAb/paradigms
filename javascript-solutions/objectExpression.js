@@ -20,12 +20,12 @@ function tokenFactory(constructor, evaluate, diff, toString) {
 const Const = tokenFactory(
     function (value) { this.value = value },
     function () { return this.value },
-    () => zero,
+    () => Const.zero,
     function () { return this.value.toString() })
 const Variable = tokenFactory(
     function (variable) { this.index = varIndexes[variable]; this.value = variable;  },
     function (...vars) { return vars[this.index] },
-    function (variable) { return this.value === variable ? one : zero },
+    function (variable) { return this.value === variable ? Const.one : Const.zero },
     function () { return this.value.toString() })
 const Operator =  tokenFactory(
     function (...operands) { this.operands = operands },
@@ -34,13 +34,13 @@ const Operator =  tokenFactory(
     function () { return this.operands.concat(this.symbol).join(" ") })
 
 Const.one = new Const(1)
-const zero = new Const(0)
+Const.zero = new Const(0)
 
 function operatorFactory(symbol, operate, differImpl) {
     const operator = function (...operands) {
-        Operator.call(this, ...operands)
+        Operator.call(this, ...operands) // можно ли от этого избавиться через абстракцию?
     }
-    operator.prototype = Object.create(AbstractExpression);
+    operator.prototype = Object.create(Operator.prototype); // вот тут без
     operator.prototype.symbol = symbol;
     operator.prototype.operate = operate;
     operator.prototype.differ = d => (...args) => differImpl(d, ...args, ...(args.map(e => e.diff(d))))
@@ -53,17 +53,17 @@ const Subtract = operatorFactory("-", (x, y) => x - y, (d, x, y, dx, dy) => new 
 const Multiply = operatorFactory("*", (x, y) => x * y, (d, x, y, dx, dy) => new Add(new Multiply(dx, y), new Multiply(x, dy)))
 const Divide =  operatorFactory("/", (x, y) => x / y, (d, x, y, dx, dy) => new Divide(new Subtract(new Multiply(dx, y), new Multiply(dy, x)), new Multiply(y, y)))
 const Hypot =   operatorFactory("hypot", (x, y) => x * x + y * y, (d, x, y, dx, dy) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
-const HMean =   operatorFactory("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y, dx, dy) => new Divide(new Const(2), new Add(new Divide(one, x), new Divide(one, y))).diff(d))
+const HMean =   operatorFactory("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y, dx, dy) => new Divide(new Const(2), new Add(new Divide(Const.one, x), new Divide(Const.one, y))).diff(d))
 const Negate =  operatorFactory("negate", x => -x, (d, x, dx) => new Negate(dx));
 
 const operators = {
-    '+': [Add, 2],
-    '-': [Subtract, 2],
-    '*': [Multiply, 2],
-    '/': [Divide, 2],
-    'negate': [Negate, 1],
-    'hypot': [Hypot, 2],
-    'hmean': [HMean, 2]
+    '+': Add,
+    '-': Subtract,
+    '*': Multiply,
+    '/': Divide,
+    'negate': Negate,
+    'hypot': Hypot,
+    'hmean': HMean
 }
 
 const parse = input => {
@@ -71,7 +71,7 @@ const parse = input => {
         let top
         if (token in operators) {
             let operator = operators[token]
-            top = new operator[0](...stack.splice(stack.length - operator[1]))
+            top = new operator(...stack.splice(stack.length - operator.prototype.operate.length))
         } else if (token in varIndexes) {
             top = new Variable(token)
         } else {
