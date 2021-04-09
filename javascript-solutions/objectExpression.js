@@ -36,25 +36,25 @@ const Operator =  tokenFactory(
 const one = new Const(1)
 const zero = new Const(0)
 
-function operatorFactory(symbol, operate, differ) {
+function operatorFactory(symbol, operate, differImpl) {
     const operator = function (...operands) {
         Operator.call(this, ...operands)
     }
     operator.prototype = Object.create(Operator.prototype);
     operator.prototype.symbol = symbol;
     operator.prototype.operate = operate;
-    operator.prototype.differ = differ
+    operator.prototype.differ = d => (...args) => differImpl(d, ...args, ...(args.map(e => e.diff(d))))
     operator.prototype.constructor = operator;
     return operator;
 }
 
-const Add =     operatorFactory("+", (x, y) => x + y, d => (x, y) => new Add(x.diff(d), y.diff(d)));
-const Subtract = operatorFactory("-", (x, y) => x - y, d => (x, y) => new Subtract(x.diff(d), y.diff(d)));
-const Multiply = operatorFactory("*", (x, y) => x * y, d => (x, y) => new Add(new Multiply(x.diff(d), y), new Multiply(x, y.diff(d))))
-const Divide =  operatorFactory("/", (x, y) => x / y, d => (x, y) => new Divide(new Subtract(new Multiply(x.diff(d), y), new Multiply(y.diff(d), x)), new Multiply(y, y)))
-const Hypot =   operatorFactory("hypot", (x, y) => x * x + y * y, d => (x, y) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
-const HMean =   operatorFactory("hmean", (x, y) => 2 / (1 / x + 1 / y), d => (x, y) => new Divide(new Const(2), new Add(new Divide(one, x), new Divide(one, y))).diff(d))
-const Negate =  operatorFactory("negate", x => -x, d => x => new Negate(x.diff(d)));
+const Add =     operatorFactory("+", (x, y) => x + y, (d, x, y, dx, dy) => new Add(dx, dy));
+const Subtract = operatorFactory("-", (x, y) => x - y, (d, x, y, dx, dy) => new Subtract(dx, dy));
+const Multiply = operatorFactory("*", (x, y) => x * y, (d, x, y, dx, dy) => new Add(new Multiply(dx, y), new Multiply(x, dy)))
+const Divide =  operatorFactory("/", (x, y) => x / y, (d, x, y, dx, dy) => new Divide(new Subtract(new Multiply(dx, y), new Multiply(dy, x)), new Multiply(y, y)))
+const Hypot =   operatorFactory("hypot", (x, y) => x * x + y * y, (d, x, y, dx, dy) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
+const HMean =   operatorFactory("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y, dx, dy) => new Divide(new Const(2), new Add(new Divide(one, x), new Divide(one, y))).diff(d))
+const Negate =  operatorFactory("negate", x => -x, (d, x, dx) => new Negate(dx));
 
 const operators = {
     '+': [Add, 2],
