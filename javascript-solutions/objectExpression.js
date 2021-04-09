@@ -33,14 +33,14 @@ const Operator =  tokenFactory(
     function (variable) { return this.differ(variable)(...this.operands) },
     function () { return this.operands.concat(this.symbol).join(" ") })
 
-const one = new Const(1)
+Const.one = new Const(1)
 const zero = new Const(0)
 
 function operatorFactory(symbol, operate, differImpl) {
     const operator = function (...operands) {
         Operator.call(this, ...operands)
     }
-    operator.prototype = Object.create(Operator.prototype);
+    operator.prototype = Object.create(AbstractExpression);
     operator.prototype.symbol = symbol;
     operator.prototype.operate = operate;
     operator.prototype.differ = d => (...args) => differImpl(d, ...args, ...(args.map(e => e.diff(d))))
