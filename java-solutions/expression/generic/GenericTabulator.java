@@ -1,9 +1,9 @@
 package expression.generic;
 
-import expression.Expression;
+import expression.GenericExpression;
 import expression.exceptions.ExpressionException;
 import expression.exceptions.ParserException;
-import expression.parser.ExpressionParser;
+import expression.parser.GenericExpressionParser;
 
 public class GenericTabulator implements Tabulator {
     @Override
@@ -33,7 +33,7 @@ public class GenericTabulator implements Tabulator {
                 throw new IllegalStateException("Unknown mode: " + mode);
         }
 
-        Expression<?> ex = new ExpressionParser<>(calculator).parse(expression);
+        GenericExpression<?> ex = new GenericExpressionParser<>(calculator).parse(expression);
         Object[][][] result = new Object[x2 - x1 + 1][y2 - y1 + 1][z2 - z1 + 1];
 
         for (int i = 0; x1 + i <= x2; i++) {

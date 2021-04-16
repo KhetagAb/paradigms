@@ -105,16 +105,16 @@ function parser(input) {
             if (expected === this.current()) {
                 this.next();
             } else {
-                throw new Error("mismatch exception ");
+                throw new Error("mismatch exception "); // toDo
             }
         }
     }
 
     return {
-        parseExpression: function (mode) {
+        parse: function (mode) {
             let parsed
             if (source.test('(')) {
-                parsed = this.parse(mode);
+                parsed = this.parseExpression(mode);
                 source.expect(')');
             } else {
                 parsed = this.parseOperands()[0];
@@ -122,11 +122,11 @@ function parser(input) {
 
             if (source.hasNext()) {
                 throw new Error("Unexpected symbols"); // toDo
+            } else {
+                return parsed;
             }
-
-            return parsed;
         },
-        parse: function (mode) {
+        parseExpression: function (mode) {
             let operator
             let operands
             if (mode === "prefix") {
@@ -160,7 +160,7 @@ function parser(input) {
                 } else if (source.current() in varIndexes) {
                     operands.push(new Variable(source.next()));
                 } else if (source.test('(')) {
-                    operands.push(this.parse(mode));
+                    operands.push(this.parseExpression(mode));
                     source.expect(')');
                 } else {
                     break;
@@ -173,9 +173,9 @@ function parser(input) {
 }
 
 function parsePrefix(input) {
-    return parser(input).parseExpression("prefix");
+    return parser(input).parse("prefix");
 }
 
 function parsePostfix(input) {
-    return parser(input).parseExpression("postfix");
+    return parser(input).parse("postfix");
 }

@@ -1,14 +1,14 @@
 package expression.parser;
 
 import expression.Const;
-import expression.Expression;
+import expression.GenericExpression;
 import expression.Variable;
 import expression.exceptions.ParserException;
 import expression.generic.Calculator;
 
 import java.util.*;
 
-public abstract class AbstractExpressionParser<T, C extends Calculator<T>> extends BaseParser {
+public abstract class AbstractGenericExpressionParser<T, C extends Calculator<T>> extends BaseParser {
     protected final TrieExpression tokens = new TrieExpression();
     protected final Map<Character, Character> brackets = new HashMap<>();
 
@@ -48,8 +48,8 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         this.calculator = calculator;
     }
 
-    protected Expression<T> parseExpression() throws ParserException {
-        Expression<T> parsed = parseLevel(0);
+    protected GenericExpression<T> parseExpression() throws ParserException {
+        GenericExpression<T> parsed = parseLevel(0);
 
         skipWhitespace();
         expect(EOF);
@@ -58,13 +58,13 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
     }
 
     private Token lastToken = null;
-    protected Expression<T> parseLevel(int level) throws ParserException {
+    protected GenericExpression<T> parseLevel(int level) throws ParserException {
         lastToken = null;
 
         if (level == maxRank) {
             return parseMaxLevel();
         } else {
-            Expression<T> parsed = parseLevel(level + 1);
+            GenericExpression<T> parsed = parseLevel(level + 1);
             lastToken = parseBinaryOperator();
 
             while (lastToken != null && getRank(lastToken.operator) == level) {
@@ -91,12 +91,12 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         }
     }
 
-    protected Expression<T> parseMaxLevel() throws ParserException {
+    protected GenericExpression<T> parseMaxLevel() throws ParserException {
         skipWhitespace();
 
         for (Map.Entry<Character, Character> bracket: brackets.entrySet()) {
             if (test(bracket.getKey())) {
-                Expression<T> parsed = parseLevel(0);
+                GenericExpression<T> parsed = parseLevel(0);
                 expect(bracket.getValue());
                 return parsed;
             }
@@ -112,7 +112,7 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         return parseValue();
     }
 
-    protected Expression<T> parseConst(final String prefix) throws ParserException {
+    protected GenericExpression<T> parseConst(final String prefix) throws ParserException {
         skipWhitespace();
         String parsed = prefix + parseToken(BaseParser::isDigit);
         try {
@@ -122,7 +122,7 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         }
     }
 
-    protected Expression<T> parseValue() throws ParserException {
+    protected GenericExpression<T> parseValue() throws ParserException {
         Token token = tokens.parseToken();
 
         if (token.checkOperator(Types.UNARY)) {
@@ -144,12 +144,12 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
         }
     }
 
-    protected Expression<T> buildBinaryOperator(String operator, Expression<T> left, Expression<T> right) {
+    protected GenericExpression<T> buildBinaryOperator(String operator, GenericExpression<T> left, GenericExpression<T> right) {
         assert binaryFactories.containsKey(operator);
         return binaryFactories.get(operator).get(left, right, calculator);
     }
 
-    protected Expression<T> buildUnaryOperator(String operator, Expression<T> expression) {
+    protected GenericExpression<T> buildUnaryOperator(String operator, GenericExpression<T> expression) {
         assert unaryFactories.containsKey(operator);
         return unaryFactories.get(operator).get(expression, calculator);
     }
@@ -224,10 +224,10 @@ public abstract class AbstractExpressionParser<T, C extends Calculator<T>> exten
 
 @FunctionalInterface
 interface BinaryFactory<T> {
-    Expression<T> get(Expression<T> left, Expression<T> right, Calculator<T> calculator);
+    GenericExpression<T> get(GenericExpression<T> left, GenericExpression<T> right, Calculator<T> calculator);
 }
 
 @FunctionalInterface
 interface UnaryFactory<T> {
-    Expression<T> get(Expression<T> left, Calculator<T> calculator);
+    GenericExpression<T> get(GenericExpression<T> left, Calculator<T> calculator);
 }

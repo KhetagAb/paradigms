@@ -8,7 +8,7 @@ public class Divide<T> extends BinaryOperation<T> {
         return calculator.divide(left, right);
     }
 
-    public Divide(Expression<T> left, Expression<T> right, Calculator<T> calculator) {
+    public Divide(GenericExpression<T> left, GenericExpression<T> right, Calculator<T> calculator) {
         super(left, right, calculator);
     }
 

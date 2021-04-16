@@ -7,8 +7,8 @@ import expression.generic.Calculator;
 import java.util.List;
 import java.util.Map;
 
-public class ExpressionParser<T, C extends Calculator<T>> extends AbstractExpressionParser<T, C> implements Parser<T> {
-    public ExpressionParser(C calculator) {
+public class GenericExpressionParser<T, C extends Calculator<T>> extends AbstractGenericExpressionParser<T, C> implements GenericParser<T> {
+    public GenericExpressionParser(C calculator) {
         List<Map<String, BinaryFactory<T>>> BINARY_OPERATORS = List.of(
                 Map.of("+", Add::new, "-", Subtract::new),
                 Map.of("*", Multiply::new, "/", Divide::new),
@@ -28,7 +28,7 @@ public class ExpressionParser<T, C extends Calculator<T>> extends AbstractExpres
     }
 
     @Override
-    public Expression<T> parse(String expression) throws ParserException {
+    public GenericExpression<T> parse(String expression) throws ParserException {
         setSource(new StringSource(expression));
 
         return parseExpression();

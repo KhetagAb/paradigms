@@ -1,6 +1,6 @@
 package expression;
 
-public class Const<T> implements Expression<T> {
+public class Const<T> implements GenericExpression<T> {
     private final T value;
 
     public Const(T value) {

@@ -3,11 +3,11 @@ package expression;
 import expression.generic.Calculator;
 
 public abstract class BinaryOperation<T> extends Operation<T> {
-    protected final Expression<T> left, right;
+    protected final GenericExpression<T> left, right;
 
     protected abstract T operate(T left, T right);
 
-    protected BinaryOperation(Expression<T> left, Expression<T> right, Calculator<T> calculator) {
+    protected BinaryOperation(GenericExpression<T> left, GenericExpression<T> right, Calculator<T> calculator) {
         super(calculator);
         this.left = left;
         this.right = right;

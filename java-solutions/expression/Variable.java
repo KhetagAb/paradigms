@@ -2,7 +2,7 @@ package expression;
 
 import expression.generic.Calculator;
 
-public class Variable<T> implements Expression<T> {
+public class Variable<T> implements GenericExpression<T> {
     protected final Calculator<T> calculator;
     private final String name;
 

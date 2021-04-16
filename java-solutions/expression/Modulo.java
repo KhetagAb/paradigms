@@ -3,7 +3,7 @@ package expression;
 import expression.generic.Calculator;
 
 public class Modulo<T> extends BinaryOperation<T> {
-    public Modulo(Expression<T> left, Expression<T> right, Calculator<T> calculator) {
+    public Modulo(GenericExpression<T> left, GenericExpression<T> right, Calculator<T> calculator) {
         super(left, right, calculator);
     }
 
