@@ -6,64 +6,56 @@ const varIndexes = {
     'z': 2
 }
 
-function tokenFactory(constructor, evaluate, diff, toString) {
-    constructor.prototype = {
-        evaluate: evaluate,
-        diff: diff,
-        toString: toString,
-        constructor: constructor
+const AbstractExpression = {
+    abstractPrototype: {
+        evaluate: function (...vars) { return this.operate(...this.operands.map(ex => ex.evaluate(...vars))) },
+        diff: function (variable) { return this.differ(variable, ...this.operands, ...(this.operands.map(e => e.diff(variable)))) },
+        prefix() { return this.toString(); },
+        toString: function () { return this.operands[0].toString() }
+    },
+    init: (...params) => {
+        function Operator(...operands) {
+            this.operands = operands
+        }
+        Operator.prototype = Object.create(AbstractExpression.abstractPrototype)
+        params.forEach(e => Operator.prototype[e.name] = e)
+        return Operator
     }
-
-    return constructor
 }
 
-const Const = tokenFactory(
-    function (value) { this.value = value },
-    function () { return this.value },
-    () => Const.zero,
-    function () { return this.value.toString() })
-const Variable = tokenFactory(
-    function (variable) { this.index = varIndexes[variable]; this.value = variable;  },
-    function (...vars) { return vars[this.index] },
-    function (variable) { return this.value === variable ? Const.one : Const.zero },
-    function () { return this.value.toString() })
-const Operator =  tokenFactory(
-    function (...operands) { this.operands = operands },
-    function (...vars) { return this.operate(...this.operands.map(ex => ex.evaluate(...vars))) },
-    function (variable) { return this.differ(variable)(...this.operands) },
-    function () { return this.operands.concat(this.symbol).join(" ") })
-
+const Const = AbstractExpression.init( function evaluate() { return this.operands[0]; },
+    function diff() { return Const.zero; }
+)
 Const.one = new Const(1)
 Const.zero = new Const(0)
+const Variable = AbstractExpression.init(function evaluate(...vars) { return vars[varIndexes[this.operands[0]]]; },
+    function diff(variable) { return this.operands[0] === variable ? Const.one : Const.zero }
+)
 
-function operatorFactory(symbol, operate, differImpl) {
-    const operator = function (...operands) {
-        Operator.call(this, ...operands) // можно ли от этого избавиться через абстракцию?
-    }
-    operator.prototype = Object.create(Operator.prototype); // вот тут без
-    operator.prototype.symbol = symbol;
-    operator.prototype.operate = operate;
-    operator.prototype.differ = d => (...args) => differImpl(d, ...args, ...(args.map(e => e.diff(d))))
-    operator.prototype.constructor = operator;
-    return operator;
+function abstractOperation(symbol, operateFun, differFun) {
+    return AbstractExpression.init(
+        function operate(...args) { return operateFun(...args); },
+        function differ(variable, ...args) { return differFun(variable, ...args); },
+        function prefix() { return "(" + [].concat(symbol).concat(this.operands.map(e => e.prefix())).join(" ") + ")" },
+        function toString() { return this.operands.concat(symbol).join(" "); })
 }
 
-const Add =     operatorFactory("+", (x, y) => x + y, (d, x, y, dx, dy) => new Add(dx, dy));
-const Subtract = operatorFactory("-", (x, y) => x - y, (d, x, y, dx, dy) => new Subtract(dx, dy));
-const Multiply = operatorFactory("*", (x, y) => x * y, (d, x, y, dx, dy) => new Add(new Multiply(dx, y), new Multiply(x, dy)))
-const Divide =  operatorFactory("/", (x, y) => x / y, (d, x, y, dx, dy) => new Divide(new Subtract(new Multiply(dx, y), new Multiply(dy, x)), new Multiply(y, y)))
-const Hypot =   operatorFactory("hypot", (x, y) => x * x + y * y, (d, x, y, dx, dy) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
-const HMean =   operatorFactory("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y, dx, dy) => new Divide(new Const(2), new Add(new Divide(Const.one, x), new Divide(Const.one, y))).diff(d))
-const Negate =  operatorFactory("negate", x => -x, (d, x, dx) => new Negate(dx));
+const Add = abstractOperation("+", (x, y) => x + y, (d, x, y) => new Add(x.diff(d), y.diff(d)))
+const Subtract = abstractOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x.diff(d), y.diff(d)));
+const Multiply = abstractOperation("*", (x, y) => x * y, (d, x, y) => new Add(new Multiply(x.diff(d), y), new Multiply(x, y.diff(d))))
+const Divide =   abstractOperation("/", (x, y) => x / y, (d, x, y) => new Divide(new Subtract(new Multiply(x.diff(d), y), new Multiply(y.diff(d), x)), new Multiply(y, y)))
+const Hypot =    abstractOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
+const HMean =    abstractOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x), new Divide(Const.one, y))).diff(d))
+const Negate =   abstractOperation("negate", x => -x, (d, x) => new Negate(x.diff(d)));
 
 const operators = {
-    '+': Add,
-    '-': Subtract,
-    '*': Multiply,
-    '/': Divide,
-    'negate': Negate,
-    'hypot': Hypot,
-    'hmean': HMean
+    '+': [Add, 2],
+    '-': [Subtract, 2],
+    '*': [Multiply, 2],
+    '/': [Divide, 2],
+    'negate': [Negate, 1],
+    'hypot': [Hypot, 2],
+    'hmean': [HMean, 2]
 }
 
 const parse = input => {
@@ -71,7 +63,7 @@ const parse = input => {
         let top
         if (token in operators) {
             let operator = operators[token]
-            top = new operator(...stack.splice(stack.length - operator.prototype.operate.length))
+            top = new operator[0](...stack.splice(stack.length - operator[1]))
         } else if (token in varIndexes) {
             top = new Variable(token)
         } else {
@@ -80,3 +72,46 @@ const parse = input => {
         return stack.concat(top)
     }, []).pop();
 }
+
+// (- (* 2 x) 3)
+// (+ ...)
+
+// ex = @ <ex> <ex> <ex> <ex>
+// ex = <ex> <ex> <ex> @
+// ex = 1
+// ex = x
+function parser(input) {
+    let source = {
+        index: 0,
+        input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== "");
+        hasNext: index < this.input.length,
+        next: this.input[++index]
+    }
+
+    return {
+        parse: function (mode) {
+            if (Number.isFinite(input[index])) {
+                return new Const(input[index])
+            }
+
+            if (mode === "prefix") {
+                return [].concat(this.parseOperator()).concat(this.parseOperands);
+            } else {
+                return [].concat(this.parseOperands()).concat(this.parseOperator());
+            }
+        },
+        parseOperator: () => 1,
+        parseOperands: () => 1
+    }
+}
+function parsePrefix(input) {
+    return parser("prefix").parse(input);
+}
+
+
+let ex = new Subtract(new Multiply(new Const(2), new Variable('x')), new Const(3));
+
+// console.log(ex.toString())
+// console.log(ex.prefix())
+
+console.log(parsePrefix("(-    (*  2   x)  3)"))

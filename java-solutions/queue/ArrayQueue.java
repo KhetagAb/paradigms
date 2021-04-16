@@ -28,6 +28,8 @@ public class ArrayQueue extends AbstractQueue {
 
     @Override
     public Object element() {
+        assert !isEmpty();
+
         return elements[head];
     }
 
@@ -42,5 +44,39 @@ public class ArrayQueue extends AbstractQueue {
     @Override
     protected Queue createQueue() {
         return new ArrayQueue();
+    }
+
+    public void push(final Object element) {
+        assert element != null;
+        size++;
+
+        ensureCapacity();
+        head = (head + elements.length - 1) % elements.length;
+        elements[head] = element;
+    }
+
+    public Object remove() {
+        assert !isEmpty();
+
+        size--;
+        final int tail = (head + size) % elements.length;
+        final Object result = elements[tail];
+        elements[tail] = null;
+
+        return result;
+    }
+
+    public Object peek() {
+        assert !isEmpty();
+
+        return elements[(head + size - 1) % elements.length];
+    }
+
+    public Object[] toArray() {
+        return CommonArrayQueue.castToSeries(elements, head, size, size);
+    }
+
+    public String toStr() {
+        return Arrays.toString(toArray());
     }
 }
