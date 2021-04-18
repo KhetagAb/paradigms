@@ -94,8 +94,8 @@ class ParserError extends Error {
 // ex = (@ <ex> <ex> <ex> ...)
 // ex = (<ex> <ex> <ex> ... @)
 // ex = const | variable
-function parser(input) {
-    let source = {
+function parser(input, mode) {
+    const source = {
         pointer: 0,
         input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== ""),
         current: function () { return this.input[this.pointer] },
@@ -123,14 +123,14 @@ function parser(input) {
         }
     }
 
-    return {
-        parse: function (mode) {
+    const parser = {
+        parse: () => {
             let parsed
             if (source.test('(')) {
-                parsed = this.parseExpression(mode);
+                parsed = parser.parseExpression();
                 source.expect(')');
             } else {
-                parsed = this.parseOperands(mode);
+                parsed = parser.parseOperands();
                 if (parsed.length > 1) {
                     source.pointer = 1;
                 } else {
@@ -139,26 +139,14 @@ function parser(input) {
             }
 
             if (!source.isEOF()) {
-                this.err("Unexpected symbols");
+                parser.err("Unexpected symbols");
             } else {
                 return parsed;
             }
         },
-        parseExpression: function (mode) {
-            let operator, operands
-            switch (mode) {
-                case "prefix":
-                    operator = this.parseOperator(mode);
-                    operands = this.parseOperands(mode);
-                    break;
-                case "postfix":
-                    operands = this.parseOperands(mode);
-                    operator = this.parseOperator(mode);
-                    break;
-                default:
-                    this.err(`Illegal parsing mode: ${mode}`);
-            }
-
+        parseExpression: function () {
+            let parsed = this.parseIn.map(e => this.parsingOrder[e]())
+            let operator = parsed[this.parseIn[0]], operands = parsed[this.parseIn[1]]
             const operatorLen = operator.prototype.operate.length;
             if (operatorLen !== 0 && operatorLen !== operands.length) {
                 source.pointer--;
@@ -167,21 +155,21 @@ function parser(input) {
                 return new operator(...operands);
             }
         },
-        parseOperator: function () {
+        parseOperator: () => {
             if (source.current() in operators) {
                 return operators[source.next()]
             } else {
-                this.err(`Illegal operator found: '${source.current()}'`)
+                parser.err(`Illegal operator found: '${source.current()}'`)
             }
         },
-        parseOperands: function (mode) {
+        parseOperands: () => {
             let operands = []
             while (!source.isEOF()) if (isFinite(source.current())) {
                 operands.push(new Const(Number(source.next())));
             } else if (source.current() in varIndexes) {
                 operands.push(new Variable(source.next()));
             } else if (source.test('(')) {
-                operands.push(this.parseExpression(mode));
+                operands.push(parser.parseExpression());
                 source.expect(')');
             } else {
                 break;
@@ -193,16 +181,32 @@ function parser(input) {
 
             return operands
         },
-        err: function (message) {
+        err: (message) => {
             throw new ParserError(message + '.\n' + source.getErrorPos());
         }
     }
+
+    parser.parsingOrder = [parser.parseOperator, parser.parseOperands];
+    switch (mode) {
+        case "prefix":
+            parser.parseIn = [0, 1];
+            break;
+        case "postfix":
+            parser.parseIn = [1, 0];
+            break;
+        default:
+            parser.err(`Illegal parsing mode: ${mode}`);
+    }
+
+    return parser;
 }
 
 function parsePrefix(input) {
-    return parser(input).parse("prefix");
+    return parser(input, "prefix").parse();
 }
 
 function parsePostfix(input) {
-    return parser(input).parse("postfix");
+    return parser(input, "postfix").parse();
 }
+
+let ex = parsePostfix('((x negate) 2 /)')
