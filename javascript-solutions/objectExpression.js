@@ -9,7 +9,7 @@ const varIndexes = {
 const AbstractExpression = {
     abstractPrototype: {
         evaluate: function (...vars) { return this.operate(...this.operands.map(ex => ex.evaluate(...vars))) },
-        diff: function (variable) { return this.differ(variable, ...this.operands, ...(this.operands.map(e => e.diff(variable)))) },
+        diff: function (variable) { return this.differ(variable, ...this.operands); },
         prefix() { return this.toString(); },
         postfix() { return this.toString(); },
         toString: function () { return this.operands[0].toString() }
@@ -24,34 +24,46 @@ const AbstractExpression = {
     }
 }
 
-const Const = AbstractExpression.init( function evaluate() { return this.operands[0]; },
+const Const = AbstractExpression.init(
+    function evaluate() { return this.operands[0]; },
     function diff() { return Const.zero; }
 )
 Const.one = new Const(1)
 Const.zero = new Const(0)
-const Variable = AbstractExpression.init(function evaluate(...vars) { return vars[varIndexes[this.operands[0]]]; },
+const Variable = AbstractExpression.init(
+    function evaluate(...vars) { return vars[varIndexes[this.operands[0]]]; },
     function diff(variable) { return this.operands[0] === variable ? Const.one : Const.zero }
 )
 
 function abstractOperation(symbol, operateFun, differFun) {
     return AbstractExpression.init(
         function operate(...args) { return operateFun(...args); },
-        function differ(variable, ...args) { return differFun(variable, ...args); },
+        function differ(variable, ...args) { return differFun(variable, ...(args.map(e => [e, e.diff(variable)]))); },
         function prefix() { return "(" + [].concat(symbol).concat(this.operands.map(e => e.prefix())).join(" ") + ")" },
         function postfix() { return "(" + [].concat(this.operands.map(e => e.postfix())).concat(symbol).join(" ") + ")"},
         function toString() { return this.operands.concat(symbol).join(" "); })
 }
 
-const Add = abstractOperation("+", (x, y) => x + y, (d, x, y) => new Add(x.diff(d), y.diff(d)))
-const Subtract = abstractOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x.diff(d), y.diff(d)));
-const Multiply = abstractOperation("*", (x, y) => x * y, (d, x, y) => new Add(new Multiply(x.diff(d), y), new Multiply(x, y.diff(d))))
-const Divide =   abstractOperation("/", (x, y) => x / y, (d, x, y) => new Divide(new Subtract(new Multiply(x.diff(d), y), new Multiply(y.diff(d), x)), new Multiply(y, y)))
-const Hypot =    abstractOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(x, x), new Multiply(y, y)).diff(d))
-const HMean =    abstractOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x), new Divide(Const.one, y))).diff(d))
-const Negate =   abstractOperation("negate", x => -x, (d, x) => new Negate(x.diff(d)));
-const ArithMean = abstractOperation("arith-mean", (...args) => args.reduce((sum, summoned) => sum + summoned, 0) / args.length, );
-const GeomMean = abstractOperation("geom-mean", (...args) => Math.pow(Math.abs(args.reduce((prod, multiplier) => prod * multiplier, 1)), 1 / args.length), ); // toDo
-const HarmMean = abstractOperation("harm-mean", (...args) => args.length / args.reduce((sum, summoned) => sum + 1 / summoned, 0), );
+const Add       = abstractOperation("+", (x, y) => x + y, (d, x, y) => new Add(x[1], y[1]));
+const Subtract  = abstractOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x[1], y[1]));
+const Multiply  = abstractOperation("*", (x, y) => x * y, (d, x, y) => new Add(new Multiply(x[1], y[0]), new Multiply(x[0], y[1])));
+const Divide    = abstractOperation("/", (x, y) => x / y, (d, x, y) => new Divide(new Subtract(new Multiply(x[1], y[0]), new Multiply(y[1], x[0])), new Multiply(y[0], y[0])));
+const Hypot     = abstractOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(x[0], x[0]), new Multiply(y[0], y[0])).diff(d));
+const HMean     = abstractOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
+const Negate    = abstractOperation("negate", x => -x, (d, x) => new Negate(x[1]));
+const Abs       = abstractOperation("abs", x => Math.abs(x), (d, x) => new Multiply(new Sign(x[0]), x[1]));
+const Sign      = abstractOperation("sign", x => Math.sign(x), (d, x) => Const.zero);
+const Log       = abstractOperation("log", x => Math.log(x), (d, x) => new Divide(x[1], x[0]));
+const Pow       = abstractOperation("^", (x, y) => Math.pow(x, y),
+    (d, x, y) => new Multiply(new Pow(x[0], new Subtract(y[0], Const.one)), new Add(new Multiply(y[0], x[1]), new Multiply(x[0], new Multiply(new Log(x[0]), y[1])))));
+const ArithMean = abstractOperation("arith-mean", (...args) => args.reduce((sum, term) => sum + term, 0) / args.length,
+    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), args.reduce((sum, term) => new Add(sum, term[1]), Const.zero)));
+const GeomMean  = abstractOperation("geom-mean", (...args) => Math.pow(Math.abs(args.reduce((prod, term) => prod * term, 1)), 1 / args.length),
+    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), new Multiply(new Pow(new GeomMean(...args.map(e => e[0])), new Subtract(Const.one, new Const(args.length))) ,
+        new Abs(args.reduce((prod, multiplier) => new Multiply(prod, multiplier[0]), Const.one)).diff(d))));
+const HarmMean  = abstractOperation("harm-mean", (...args) => args.length / args.reduce((sum, term) => sum + 1 / term, 0),
+    (d, ...args) => new Multiply(new Const(args.length), new Divide(args.reduce((sum, term) => new Add(sum, new Divide(term[1], new Multiply(term[0], term[0]))), Const.zero),
+        new Pow(args.reduce((sum, term) => new Add(sum, new Divide(Const.one, term[0])), Const.zero), new Const(2)))));
 
 const operators = {
     '+': [Add, 2],
@@ -83,16 +95,15 @@ const parse = input => {
 
 // ex = (@ <ex> <ex> <ex> ...)
 // ex = (<ex> <ex> <ex> ... @)
-// ex = const
-// ex = variable
+// ex = const | variable
 function parser(input) {
     let source = {
         EOF: 0,
-        index: 0,
+        pointer: 0,
         input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== ""),
-        hasNext: function () { return this.index < this.input.length },
-        current: function () { return this.input[this.index] },
-        next: function () { return this.hasNext() ? this.input[this.index++] : this.EOF },
+        current: function () { return this.input[this.pointer] },
+        hasNext: function () { return this.pointer < this.input.length },
+        next: function () { return this.hasNext() ? this.input[this.pointer++] : this.EOF },
         test: function (expected) {
             if (expected === this.current()) {
                 this.next();
@@ -107,6 +118,9 @@ function parser(input) {
             } else {
                 throw new Error("mismatch exception "); // toDo
             }
+        },
+        getErrorPos: function () {
+            return this.input.join(' ')
         }
     }
 
@@ -127,16 +141,18 @@ function parser(input) {
             }
         },
         parseExpression: function (mode) {
-            let operator
-            let operands
-            if (mode === "prefix") {
-                operator = this.parseOperator(mode);
-                operands = this.parseOperands(mode);
-            } else if (mode === "postfix") {
-                operands = this.parseOperands(mode);
-                operator = this.parseOperator(mode);
-            } else {
-                throw new Error("Illegal mode"); // toDo
+            let operator, operands
+            switch (mode) {
+                case "prefix":
+                    operator = this.parseOperator(mode);
+                    operands = this.parseOperands(mode);
+                    break;
+                case "postfix":
+                    operands = this.parseOperands(mode);
+                    operator = this.parseOperator(mode);
+                    break;
+                default:
+                    throw new Error("Illegal mode");
             }
 
             if (operator[1] !== Infinity && operator[1] !== operands.length) {
@@ -154,17 +170,19 @@ function parser(input) {
         },
         parseOperands: function (mode) {
             let operands = []
-            while (true) {
-                if (isFinite(source.current())) {
-                    operands.push(new Const(Number(source.next())));
-                } else if (source.current() in varIndexes) {
-                    operands.push(new Variable(source.next()));
-                } else if (source.test('(')) {
-                    operands.push(this.parseExpression(mode));
-                    source.expect(')');
-                } else {
-                    break;
-                }
+            while (source.hasNext()) if (isFinite(source.current())) {
+                operands.push(new Const(Number(source.next())));
+            } else if (source.current() in varIndexes) {
+                operands.push(new Variable(source.next()));
+            } else if (source.test('(')) {
+                operands.push(this.parseExpression(mode));
+                source.expect(')');
+            } else {
+                break;
+            }
+
+            if (operands.length === 0) {
+                throw new Error("no operands found");
             }
 
             return operands
