@@ -50,7 +50,7 @@ const Hypot     = createOperation("hypot", (x, y) => x * x + y * y, (d, x, y) =>
 const HMean     = createOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
 const Negate    = createOperation("negate", x => -x, (d, x) => new Negate(x[1]));
 const Abs       = createOperation("abs", x => Math.abs(x), (d, x) => new Multiply(new Sign(x[0]), x[1]));
-const Sign      = createOperation("sign", x => Math.sign(x), (d, x) => Const.zero);
+const Sign      = createOperation("sign", x => Math.sign(x), () => Const.zero);
 const Log       = createOperation("log", x => Math.log(x), (d, x) => new Divide(x[1], x[0]));
 const Pow       = createOperation("^", (x, y) => Math.pow(x, y),
     (d, x, y) => new Multiply(new Pow(x[0], new Subtract(y[0], Const.one)), new Add(new Multiply(y[0], x[1]), new Multiply(x[0], new Multiply(new Log(x[0]), y[1])))));
@@ -84,12 +84,15 @@ const parse = input => {
     }, []).pop();
 }
 
-class ParserError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = "ParserError";
-    }
+function ParserError(errorMessage, pos, input) {
+    this.pos = pos;
+    this.input = input;
+    this.message = `Parser error at pos ${this.pos}: ${errorMessage}.\n${this.input.join(' ')} \n${'-'.repeat(this.pos)}^`;
 }
+
+ParserError.prototype = Object.create(Error.prototype);
+ParserError.prototype.name = "ParserError";
+ParserError.prototype.constructor = ParserError;
 
 // ex = (@ <ex> <ex> <ex> ...)
 // ex = (<ex> <ex> <ex> ... @)
@@ -113,13 +116,11 @@ function parser(input, mode) {
             if (expected === this.current()) {
                 this.next();
             } else {
-                throw new ParserError(`Mismatch exception: expect '${expected}'.\n` + this.getErrorPos());
+                throw new ParserError(`Mismatch exception: expect '${expected}'.\n`, this.getErrorPos(), this.input);
             }
         },
         getErrorPos: function () {
-            let errorIndex = this.input.slice(0, this.pointer).reduce((sum, token) => sum + token.length + 1, 0)
-            return this.input.join(' ') + '\n' +
-                '-'.repeat(errorIndex) + "^";
+            return this.input.slice(0, this.pointer).reduce((sum, token) => sum + token.length + 1, 0);
         }
     }
 
@@ -150,7 +151,7 @@ function parser(input, mode) {
             const operatorLen = operator.prototype.operate.length;
             if (operatorLen !== 0 && operatorLen !== operands.length) {
                 source.pointer--;
-                this.err("Operands arity mismatch"); // toDO
+                parser.err("Operands arity mismatch");
             } else {
                 return new operator(...operands);
             }
@@ -176,14 +177,12 @@ function parser(input, mode) {
             }
 
             if (operands.length === 0) {
-                this.err('No operands found');
+                parser.err('No operands found');
             }
 
             return operands
         },
-        err: (message) => {
-            throw new ParserError(message + '.\n' + source.getErrorPos());
-        }
+        err: (message) => { throw new ParserError(message, source.getErrorPos(), source.input); }
     }
 
     parser.parsingOrder = [parser.parseOperator, parser.parseOperands];
@@ -208,5 +207,3 @@ function parsePrefix(input) {
 function parsePostfix(input) {
     return parser(input, "postfix").parse();
 }
-
-let ex = parsePostfix('((x negate) 2 /)')
