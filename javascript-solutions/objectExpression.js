@@ -3,27 +3,26 @@
 const varIndexes = { 'x': 0, 'y': 1, 'z': 2 }
 const Operation = {
     evaluate: function (...vars) { return this.operate(...this.operands.map(ex => ex.evaluate(...vars))) },
-    diff: function (variable) { return this.differ(variable, ...(this.operands.map(e => [e, e.diff(variable)]))); },
+    diff: function (variable) { return this.diffImpl(variable, ...(this.operands.map(e => [e, e.diff(variable)]))); },
     prefix: function () { return "(" + [].concat(this.symbol).concat(this.operands.map(e => e.prefix())).join(" ") + ")" },
     postfix: function () { return "(" + [].concat(this.operands.map(e => e.postfix())).concat(this.symbol).join(" ") + ")"},
     toString: function () { return this.operands.concat(this.symbol).join(" "); }
 }
+const NoArityOperation = {
+    prefix() { return this.toString(); },
+    postfix() { return this.toString(); },
+    toString: function () { return this.value.toString() }
+}
 
-function createOperation(symbol, operate, differ) {
+function createOperation(symbol, operate, diffImpl) {
     const constructor = function (...operands) {
         this.operands = operands;
     }
     constructor.prototype = Object.create(Operation);
     constructor.prototype.symbol  = symbol;
     constructor.prototype.operate = operate;
-    constructor.prototype.differ = differ;
+    constructor.prototype.diffImpl = diffImpl;
     return constructor;
-}
-
-const NoArityOperation = {
-    prefix() { return this.toString(); },
-    postfix() { return this.toString(); },
-    toString: function () { return this.value.toString() }
 }
 
 function createNoArityOperation(evaluate, diff) {
@@ -46,7 +45,7 @@ const Add       = createOperation("+", (x, y) => x + y, (d, x, y) => new Add(x[1
 const Subtract  = createOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x[1], y[1]));
 const Multiply  = createOperation("*", (x, y) => x * y, (d, x, y) => new Add(new Multiply(x[1], y[0]), new Multiply(x[0], y[1])));
 const Divide    = createOperation("/", (x, y) => x / y, (d, x, y) => new Divide(new Subtract(new Multiply(x[1], y[0]), new Multiply(y[1], x[0])), new Multiply(y[0], y[0])));
-const Hypot     = createOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(x[0], x[0]), new Multiply(y[0], y[0])).diff(d));
+const Hypot     = createOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(new Const(2), new Multiply(x[0], x[1])), new Multiply(new Const(2), new Multiply(y[0], y[1]))))
 const HMean     = createOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
 const Negate    = createOperation("negate", x => -x, (d, x) => new Negate(x[1]));
 const Abs       = createOperation("abs", x => Math.abs(x), (d, x) => new Multiply(new Sign(x[0]), x[1]));
@@ -87,18 +86,32 @@ const parse = input => {
 function ParserError(errorMessage, pos, input) {
     this.pos = pos;
     this.input = input;
-    this.message = `Parser error at pos ${this.pos}: ${errorMessage}.\n${this.input.join(' ')} \n${'-'.repeat(this.pos)}^`;
+    this.message = `Parser error at pos ${this.pos + 1}: ${errorMessage}.\n${this.input.join(' ')} \n${'-'.repeat(this.pos)}^\n`;
 }
-
 ParserError.prototype = Object.create(Error.prototype);
 ParserError.prototype.name = "ParserError";
 ParserError.prototype.constructor = ParserError;
 
-// ex = (@ <ex> <ex> <ex> ...)
-// ex = (<ex> <ex> <ex> ... @)
-// ex = const | variable
-function parser(input, mode) {
-    const source = {
+class ArityMismatchException extends ParserError {
+    constructor(errorMessage, pos, input) {
+        super(errorMessage, pos, input);
+    }
+}
+
+class MismatchException extends ParserError {
+    constructor(errorMessage, pos, input) {
+        super(errorMessage, pos, input);
+    }
+}
+
+class OperandsMismatchException extends MismatchException {
+    constructor(errorMessage, pos, input) {
+        super(errorMessage, pos, input);
+    }
+}
+
+const charSource = function (input) {
+    return {
         pointer: 0,
         input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== ""),
         current: function () { return this.input[this.pointer] },
@@ -116,14 +129,16 @@ function parser(input, mode) {
             if (expected === this.current()) {
                 this.next();
             } else {
-                throw new ParserError(`Mismatch exception: expect '${expected}'.\n`, this.getErrorPos(), this.input);
+                throw new MismatchException(`Mismatch exception: expect '${expected}'.\n`, this.getErrorPos(), this.input);
             }
         },
-        getErrorPos: function () {
-            return this.input.slice(0, this.pointer).reduce((sum, token) => sum + token.length + 1, 0);
-        }
+        getErrorPos: function (tokenDelta = 0) { return this.input.slice(0, this.pointer += tokenDelta).reduce((sum, token) => sum + token.length + 1, 0); }
     }
+}
 
+// ex = (@ <ex> <ex> <ex> ...), ex = (<ex> <ex> <ex> ... @)
+// ex = const | variable
+function parser(source, mode) {
     const parser = {
         parse: () => {
             let parsed
@@ -138,31 +153,15 @@ function parser(input, mode) {
                     parsed = parsed[0]
                 }
             }
-
-            if (!source.isEOF()) {
-                parser.err("Unexpected symbols");
-            } else {
-                return parsed;
-            }
+            return (source.isEOF()) ? parsed : parser.err(MismatchException,"Unexpected symbols");
         },
         parseExpression: function () {
             let parsed = this.parseIn.map(e => this.parsingOrder[e]())
             let operator = parsed[this.parseIn[0]], operands = parsed[this.parseIn[1]]
             const operatorLen = operator.prototype.operate.length;
-            if (operatorLen !== 0 && operatorLen !== operands.length) {
-                source.pointer--;
-                parser.err("Operands arity mismatch");
-            } else {
-                return new operator(...operands);
-            }
+            return (operatorLen === 0 || operatorLen === operands.length) ? new operator(...operands) : parser.err(ArityMismatchException,`Operands arity mismatch: required ${operatorLen}, but found ${operands.length}`, -1);
         },
-        parseOperator: () => {
-            if (source.current() in operators) {
-                return operators[source.next()]
-            } else {
-                parser.err(`Illegal operator found: '${source.current()}'`)
-            }
-        },
+        parseOperator: () => (source.current() in operators) ? operators[source.next()] : parser.err(ParserError,`Unknown operator found: '${source.current()}'`),
         parseOperands: () => {
             let operands = []
             while (!source.isEOF()) if (isFinite(source.current())) {
@@ -175,14 +174,9 @@ function parser(input, mode) {
             } else {
                 break;
             }
-
-            if (operands.length === 0) {
-                parser.err('No operands found');
-            }
-
-            return operands
+            return (operands.length !== 0) ? operands : parser.err(OperandsMismatchException,'No operands found');
         },
-        err: (message) => { throw new ParserError(message, source.getErrorPos(), source.input); }
+        err: (constructor, message, tokenDelta) => { throw new constructor(message, source.getErrorPos(tokenDelta), source.input); }
     }
 
     parser.parsingOrder = [parser.parseOperator, parser.parseOperands];
@@ -194,16 +188,16 @@ function parser(input, mode) {
             parser.parseIn = [1, 0];
             break;
         default:
-            parser.err(`Illegal parsing mode: ${mode}`);
+            parser.err(ParserError,`Illegal parsing mode: ${mode}`);
     }
 
     return parser;
 }
 
 function parsePrefix(input) {
-    return parser(input, "prefix").parse();
+    return parser(charSource(input), "prefix").parse();
 }
 
 function parsePostfix(input) {
-    return parser(input, "postfix").parse();
+    return parser(charSource(input), "postfix").parse();
 }
