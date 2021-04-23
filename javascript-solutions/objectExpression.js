@@ -1,17 +1,12 @@
 "use strict";
 
-const varIndexes = { 'x': 0, 'y': 1, 'z': 2 }
+const variableIndexes = { 'x': 0, 'y': 1, 'z': 2 }
 const Operation = {
     evaluate: function (...vars) { return this.operate(...this.operands.map(ex => ex.evaluate(...vars))) },
     diff: function (variable) { return this.diffImpl(variable, ...(this.operands.map(e => [e, e.diff(variable)]))); },
     prefix: function () { return "(" + [].concat(this.symbol).concat(this.operands.map(e => e.prefix())).join(" ") + ")" },
     postfix: function () { return "(" + [].concat(this.operands.map(e => e.postfix())).concat(this.symbol).join(" ") + ")"},
     toString: function () { return this.operands.concat(this.symbol).join(" "); }
-}
-const NoArityOperation = {
-    prefix() { return this.toString(); },
-    postfix() { return this.toString(); },
-    toString: function () { return this.value.toString() }
 }
 
 function createOperation(symbol, operate, diffImpl) {
@@ -23,6 +18,12 @@ function createOperation(symbol, operate, diffImpl) {
     constructor.prototype.operate = operate;
     constructor.prototype.diffImpl = diffImpl;
     return constructor;
+}
+
+const NoArityOperation = {
+    prefix() { return this.toString(); },
+    postfix() { return this.toString(); },
+    toString: function () { return this.value.toString() }
 }
 
 function createNoArityOperation(evaluate, diff) {
@@ -38,15 +39,19 @@ function createNoArityOperation(evaluate, diff) {
 const Const = createNoArityOperation(function () { return this.value; }, () => Const.zero)
 Const.one = new Const(1)
 Const.zero = new Const(0)
-const Variable = createNoArityOperation(function (...vars) { return vars[varIndexes[this.value]]; },
+const Variable = createNoArityOperation(function (...vars) { return vars[variableIndexes[this.value]]; },
     function(variable) { return this.value === variable ? Const.one : Const.zero })
 
 const Add       = createOperation("+", (x, y) => x + y, (d, x, y) => new Add(x[1], y[1]));
 const Subtract  = createOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x[1], y[1]));
-const Multiply  = createOperation("*", (x, y) => x * y, (d, x, y) => new Add(new Multiply(x[1], y[0]), new Multiply(x[0], y[1])));
-const Divide    = createOperation("/", (x, y) => x / y, (d, x, y) => new Divide(new Subtract(new Multiply(x[1], y[0]), new Multiply(y[1], x[0])), new Multiply(y[0], y[0])));
-const Hypot     = createOperation("hypot", (x, y) => x * x + y * y, (d, x, y) => new Add(new Multiply(new Const(2), new Multiply(x[0], x[1])), new Multiply(new Const(2), new Multiply(y[0], y[1]))))
-const HMean     = createOperation("hmean", (x, y) => 2 / (1 / x + 1 / y), (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
+const Multiply  = createOperation("*", (x, y) => x * y,
+    (d, x, y) => new Add(new Multiply(x[1], y[0]), new Multiply(x[0], y[1])));
+const Divide    = createOperation("/", (x, y) => x / y,
+    (d, x, y) => new Divide(new Subtract(new Multiply(x[1], y[0]), new Multiply(y[1], x[0])), new Multiply(y[0], y[0])));
+const Hypot     = createOperation("hypot", (x, y) => x * x + y * y,
+    (d, x, y) => new Add(new Multiply(new Const(2), new Multiply(x[0], x[1])), new Multiply(new Const(2), new Multiply(y[0], y[1]))))
+const HMean     = createOperation("hmean", (x, y) => 2 / (1 / x + 1 / y),
+    (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
 const Negate    = createOperation("negate", x => -x, (d, x) => new Negate(x[1]));
 const Abs       = createOperation("abs", x => Math.abs(x), (d, x) => new Multiply(new Sign(x[0]), x[1]));
 const Sign      = createOperation("sign", x => Math.sign(x), () => Const.zero);
@@ -74,7 +79,7 @@ const parse = input => {
         if (token in operators) {
             let operator = operators[token]
             top = new operator(...stack.splice(stack.length - operator.prototype.operate.length))
-        } else if (token in varIndexes) {
+        } else if (token in variableIndexes) {
             top = new Variable(token)
         } else {
             top = new Const(Number(token))
@@ -83,14 +88,19 @@ const parse = input => {
     }, []).pop();
 }
 
-function ParserError(errorMessage, pos, input) {
-    this.pos = pos;
-    this.input = input;
-    this.message = `Parser error at pos ${this.pos + 1}: ${errorMessage}.\n${this.input.join(' ')} \n${'-'.repeat(this.pos)}^\n`;
+function ParserErrorFactory(parent) {
+    const ParserError = function (errorMessage, pos, input) {
+        this.pos = pos;
+        this.input = input;
+        this.message = `Parser error at pos ${this.pos + 1}: ${errorMessage}.\n${this.input.join(' ')} \n${'-'.repeat(this.pos)}^\n`;;
+    }
+    ParserError.prototype = Object.create(parent.prototype);
+    ParserError.prototype.name = "ParserError";
+    ParserError.prototype.constructor = ParserError;
+    return ParserError;0
 }
-ParserError.prototype = Object.create(Error.prototype);
-ParserError.prototype.name = "ParserError";
-ParserError.prototype.constructor = ParserError;
+
+const ParserError = ParserErrorFactory(Error);
 
 class ArityMismatchException extends ParserError {
     constructor(errorMessage, pos, input) {
@@ -132,7 +142,7 @@ const charSource = function (input) {
                 throw new MismatchException(`Mismatch exception: expect '${expected}'.\n`, this.getErrorPos(), this.input);
             }
         },
-        getErrorPos: function (tokenDelta = 0) { return this.input.slice(0, this.pointer += tokenDelta).reduce((sum, token) => sum + token.length + 1, 0); }
+        getErrorPos: function (delta = 0) { return this.input.slice(0, this.pointer += delta).reduce((sum, token) => sum + token.length + 1, 0); }
     }
 }
 
@@ -159,14 +169,25 @@ function parser(source, mode) {
             let parsed = this.parseIn.map(e => this.parsingOrder[e]())
             let operator = parsed[this.parseIn[0]], operands = parsed[this.parseIn[1]]
             const operatorLen = operator.prototype.operate.length;
-            return (operatorLen === 0 || operatorLen === operands.length) ? new operator(...operands) : parser.err(ArityMismatchException,`Operands arity mismatch: required ${operatorLen}, but found ${operands.length}`, -1);
+            if (operatorLen === 0 || operatorLen === operands.length) {
+                return new operator(...operands);
+            } else {
+                return parser.err(ArityMismatchException,
+                    `Operands arity mismatch: required ${operatorLen}, but found ${operands.length}`, -1);
+            }
         },
-        parseOperator: () => (source.current() in operators) ? operators[source.next()] : parser.err(ParserError,`Unknown operator found: '${source.current()}'`),
+        parseOperator: () => {
+            if (source.current() in operators) {
+                return operators[source.next()];
+            } else {
+                return parser.err(ParserError, `Unknown operator found: '${source.current()}'`);
+            }
+        },
         parseOperands: () => {
             let operands = []
             while (!source.isEOF()) if (isFinite(source.current())) {
                 operands.push(new Const(Number(source.next())));
-            } else if (source.current() in varIndexes) {
+            } else if (source.current() in variableIndexes) {
                 operands.push(new Variable(source.next()));
             } else if (source.test('(')) {
                 operands.push(parser.parseExpression());
@@ -174,7 +195,7 @@ function parser(source, mode) {
             } else {
                 break;
             }
-            return (operands.length !== 0) ? operands : parser.err(OperandsMismatchException,'No operands found');
+            return operands.length === 0 ? parser.err(OperandsMismatchException, 'No operands found') : operands;
         },
         err: (constructor, message, tokenDelta) => { throw new constructor(message, source.getErrorPos(tokenDelta), source.input); }
     }
@@ -194,10 +215,6 @@ function parser(source, mode) {
     return parser;
 }
 
-function parsePrefix(input) {
-    return parser(charSource(input), "prefix").parse();
-}
-
-function parsePostfix(input) {
-    return parser(charSource(input), "postfix").parse();
-}
+const parseMode = (mode, input) => parser(charSource(input), mode).parse()
+function parsePrefix(input) { return parseMode("prefix", input); }
+function parsePostfix(input) { return parseMode("postfix", input); }
