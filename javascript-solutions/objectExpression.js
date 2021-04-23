@@ -29,6 +29,7 @@ const NoArityOperation = {
 function createNoArityOperation(evaluate, diff) {
     const constructor = function (value) {
         this.value = value;
+        this.index = variableIndexes[value];
     }
     constructor.prototype = Object.create(NoArityOperation);
     constructor.prototype.evaluate  = evaluate;
@@ -39,7 +40,7 @@ function createNoArityOperation(evaluate, diff) {
 const Const = createNoArityOperation(function () { return this.value; }, () => Const.zero)
 Const.one = new Const(1)
 Const.zero = new Const(0)
-const Variable = createNoArityOperation(function (...vars) { return vars[variableIndexes[this.value]]; },
+const Variable = createNoArityOperation(function (...vars) { return vars[this.index]; },
     function(variable) { return this.value === variable ? Const.one : Const.zero })
 
 const Add       = createOperation("+", (x, y) => x + y, (d, x, y) => new Add(x[1], y[1]));
@@ -59,9 +60,9 @@ const Log       = createOperation("log", x => Math.log(x), (d, x) => new Divide(
 const Pow       = createOperation("^", (x, y) => Math.pow(x, y),
     (d, x, y) => new Multiply(new Pow(x[0], new Subtract(y[0], Const.one)), new Add(new Multiply(y[0], x[1]), new Multiply(x[0], new Multiply(new Log(x[0]), y[1])))));
 const ArithMean = createOperation("arith-mean", (...args) => args.reduce((sum, term) => sum + term, 0) / args.length,
-    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), args.reduce((sum, term) => new Add(sum, term[1]), Const.zero)));
+    (d, ...args) => new Multiply(new Const(1 / args.length), args.reduce((sum, term) => new Add(sum, term[1]), Const.zero)));
 const GeomMean  = createOperation("geom-mean", (...args) => Math.pow(Math.abs(args.reduce((prod, term) => prod * term, 1)), 1 / args.length),
-    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), new Multiply(new Pow(new GeomMean(...args.map(e => e[0])), new Subtract(Const.one, new Const(args.length))) ,
+    (d, ...args) => new Multiply(new Const(1 / args.length), new Multiply(new Pow(new GeomMean(...args.map(e => e[0])), new Const(1 - args.length)) ,
         new Abs(args.reduce((prod, multiplier) => new Multiply(prod, multiplier[0]), Const.one)).diff(d))));
 const HarmMean  = createOperation("harm-mean", (...args) => args.length / args.reduce((sum, term) => sum + 1 / term, 0),
     (d, ...args) => new Multiply(new Const(args.length), new Divide(args.reduce((sum, term) => new Add(sum, new Divide(term[1], new Multiply(term[0], term[0]))), Const.zero),
@@ -97,7 +98,7 @@ function ParserErrorFactory(parent) {
     ParserError.prototype = Object.create(parent.prototype);
     ParserError.prototype.name = "ParserError";
     ParserError.prototype.constructor = ParserError;
-    return ParserError;0
+    return ParserError;
 }
 
 const ParserError = ParserErrorFactory(Error);
@@ -123,7 +124,7 @@ class OperandsMismatchException extends MismatchException {
 const charSource = function (input) {
     return {
         pointer: 0,
-        input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== ""),
+        input: input.replaceAll('(', ' ( ').replaceAll(')', ' ) ').split(" ").filter(e => e !== ""),
         current: function () { return this.input[this.pointer] },
         next: function () { return this.pointer < this.input.length ? this.input[this.pointer++] : this.current() },
         isEOF: function () { return this.pointer === this.input.length },
