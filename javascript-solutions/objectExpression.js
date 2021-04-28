@@ -98,7 +98,7 @@ function ParserErrorFactory(parent) {
     ParserError.prototype = Object.create(parent.prototype);
     ParserError.prototype.name = "ParserError";
     ParserError.prototype.constructor = ParserError;
-    return ParserError;0
+    return ParserError;
 }
 
 const ParserError = ParserErrorFactory(Error);
