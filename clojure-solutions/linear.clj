@@ -1,22 +1,29 @@
-(defn mat-size [m] (if (and (vector? m) (not (empty? m)))
-                     (let [sizes (map mat-size m)]
-                       (if (apply = sizes)
-                         (cons (count m) (first sizes))
-                         nil))
-                     []))
+(defn check-seq
+  ([is-every? every-sizes?] (fn [seq]
+                              (and (sequential? seq)
+                                   (apply every-sizes? seq)
+                                   (every? is-every? seq))))
+  ([is-every?] (partial (check-seq is-every? (constantly identity)))))
 
-(defn same-size? [args] (apply = (map mat-size args)))
+(defn ten-shape ([ten]
+                 (if (vector? ten)
+                   (if (empty? ten) '(0)
+                                    (let [sizes (map ten-shape ten)]
+                                      (if (apply = sizes)
+                                        (cons (count ten) (first sizes))
+                                        (assert "Not tensor"))))
+                   '())))
 
-(defn check-seq [is-every every-sizes] (fn [vector]
-                                         (and (sequential? vector)
-                                              (every-sizes vector)
-                                              (every? is-every vector))))
-(def vec? (check-seq number? identity))
-(def mat? (check-seq vec? same-size?))
+(defn ten-shapes [& tens] (map ten-shape tens))
+(defn max-shape [& tens] (apply max-key count (apply ten-shapes tens)))
+(defn same-shape? [& tens] (apply = (apply ten-shapes tens)))
 
-(defn by-elem [is-each fun] (fn [& args]
-                              {:pre [((check-seq is-each same-size?) args)]}
-                              (apply mapv fun args)))
+(defn by-elem [is-every? fun] (fn [& args]
+                                {:pre [((check-seq is-every? same-shape?) args)]}
+                                (apply mapv fun args)))
+
+(def vec? (check-seq number?))
+(def mat? (check-seq vec? same-shape?))
 
 (def v+ (by-elem vec? +))
 (def v- (by-elem vec? -))
@@ -27,9 +34,9 @@
 (def m* (by-elem mat? v*))
 (def md (by-elem mat? vd))
 
-(defn scalar [& args]
-  {:pre [((check-seq vec? same-size?) args)]}
-  (apply + (apply v* args)))
+(defn scalar [& vectors]
+  {:pre [(mat? vectors)]}
+  (apply + (apply v* vectors)))
 
 (defn *s [pred fun] (fn [f & args]
                       {:pre [(pred f)
@@ -39,24 +46,54 @@
 (def v*s (*s vec? *))
 (def m*s (*s mat? v*s))
 
-(defn transpose [m]
-  {:pre [(mat? m)]}
-  (apply mapv vector m))
-(defn m*v [m v]
-  {:pre [(mat? m)
-         (vec? v)]}
-  (mapv #(scalar v %) m))
+(defn transpose [mat]
+  {:pre [(mat? mat)]}
+  (apply mapv vector mat))
+(defn m*v [mat vec]
+  {:pre [(mat? mat)
+         (vec? vec)]}
+  (mapv (partial scalar vec) mat))
+
+(defn vec3? [vec] (and (vec? vec) (== 3 (count vec))))
 
 (defn fold-left [is-each fun] (fn [& args]
                                 {:pre [(every? is-each args)]}
-                                (reduce fun (first args) (rest args))))
+                                (reduce fun args)))
+(def m*m (fold-left mat? #(mapv (partial m*v (transpose %2)) %1)))
+(def vect (fold-left vec3? #(letfn
+                               [(cross [i j] (- (* (get %1 i) (get %2 j))
+                                                (* (get %2 i) (get %1 j))))]
+                               [(cross 1 2) (cross 2 0) (cross 0 1)])))
 
-(def m*m (fold-left mat?
-                    (fn [a b]
-                      (mapv #(m*v (transpose b) %) a))))
-(def vect (fold-left vec?
-                     (fn [a b]
-                       {:pre [(== (count a) (count b) 3)]}
-                       (letfn [(cross [i j] (- (* (get a i) (get b j))
-                                               (* (get b i) (get a j))))]
-                         [(cross 1 2) (cross 2 0) (cross 0 1)]))))
+(defn number-broadcast [n shape]
+  (if (empty? shape)
+    n
+    (into [] (repeat (first shape) (number-broadcast n (rest shape))))))
+
+(defn tensor-cast [ten shape]
+  (if (number? ten) (number-broadcast ten shape)
+                  (mapv #(tensor-cast % (rest shape)) ten)))
+
+(defn broadcast-able [& tens]
+  (letfn [(compat [a b] (if (or (nil? a) (not-every? true? (map = a b)))
+                          nil
+                          (max-key count a b)))]
+    (some? (reduce compat (max-shape tens) (apply ten-shapes tens)))))
+
+(defn broadcast [& tens]
+  {:pre [(apply broadcast-able tens)]}
+  (let [max (apply max-shape tens)]
+    (mapv #(tensor-cast % max) tens)))
+
+(defn ten-op [fun]
+  (letfn [(operate [& tens]
+            (if (every? number? tens)
+              (apply fun tens)
+              (apply mapv operate tens)))]
+    (fn [& tens]
+      (apply operate (apply broadcast tens)))))
+
+(def tb+ (ten-op +))
+(def tb- (ten-op -))
+(def tb* (ten-op *))
+(def tbd (ten-op /))
