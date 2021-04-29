@@ -75,10 +75,10 @@
                   (mapv #(tensor-cast % (rest shape)) ten)))
 
 (defn broadcast-able [& tens]
-  (letfn [(compat [a b] (if (or (nil? a) (not-every? true? (map = a b)))
-                          nil
-                          (max-key count a b)))]
-    (some? (reduce compat (max-shape tens) (apply ten-shapes tens)))))
+  (letfn [(compat [a b] (if (every? true? (map = a b))
+                          (max-key count a b)
+                          (reduced false)))]
+    (unreduced (reduce compat (max-shape tens) (apply ten-shapes tens)))))
 
 (defn broadcast [& tens]
   {:pre [(apply broadcast-able tens)]}
