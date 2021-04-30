@@ -17,9 +17,8 @@
 (def operators {'+ add '- subtract '* multiply '/ divide 'negate subtract})
 
 (defn parseFunction [input]
-  (letfn [(parse-operator [operator] (operators operator))
-          (parse-expression [exps] (cond
-                                     (list? exps) (apply (parse-operator (first exps)) (mapv parse-expression (rest exps)))
+  (letfn [(parse-expression [exps] (cond
+                                     (list? exps) (apply (operators (first exps)) (mapv parse-expression (rest exps)))
                                      (number? exps) (constant exps)
                                      :else (variable (str exps))))]
     (parse-expression (read-string input))))
