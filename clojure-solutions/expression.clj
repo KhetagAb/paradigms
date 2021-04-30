@@ -4,9 +4,7 @@
 (def constant constantly)
 (defn variable [var] (fn [vars] (vars var)))
 
-(defn _div
-  ([f] (/ 1 (double f)))
-  ([f & args] (reduce #(/ %1 (double %2)) f args)))
+(defn _div [f & args] (/ (double f) (apply * args)))
 (defn square [a] (* a a))
 (defn mean-op [& args] (_div (apply + args) (count args)))
 (defn varn-op [& args] (- (apply mean-op (map square args)) (square (apply mean-op args))))
