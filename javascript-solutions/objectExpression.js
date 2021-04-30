@@ -43,29 +43,68 @@ Const.zero = new Const(0)
 const Variable = createNoArityOperation(function (...vars) { return vars[this.index]; },
     function(variable) { return this.value === variable ? Const.one : Const.zero })
 
-const Add       = createOperation("+", (x, y) => x + y, (d, x, y) => new Add(x[1], y[1]));
-const Subtract  = createOperation("-", (x, y) => x - y, (d, x, y) => new Subtract(x[1], y[1]));
-const Multiply  = createOperation("*", (x, y) => x * y,
+const Add = createOperation(
+    "+",
+    (x, y) => x + y,
+    (d, x, y) => new Add(x[1], y[1]));
+const Subtract = createOperation(
+    "-",
+    (x, y) => x - y,
+    (d, x, y) => new Subtract(x[1], y[1]));
+const Multiply = createOperation(
+    "*",
+    (x, y) => x * y,
     (d, x, y) => new Add(new Multiply(x[1], y[0]), new Multiply(x[0], y[1])));
-const Divide    = createOperation("/", (x, y) => x / y,
+const Divide = createOperation(
+    "/",
+    (x, y) => x / y,
     (d, x, y) => new Divide(new Subtract(new Multiply(x[1], y[0]), new Multiply(y[1], x[0])), new Multiply(y[0], y[0])));
-const Hypot     = createOperation("hypot", (x, y) => x * x + y * y,
-    (d, x, y) => new Add(new Multiply(new Const(2), new Multiply(x[0], x[1])), new Multiply(new Const(2), new Multiply(y[0], y[1]))))
-const HMean     = createOperation("hmean", (x, y) => 2 / (1 / x + 1 / y),
+const Hypot     = createOperation(
+    "hypot",
+    (x, y) => x * x + y * y,
+    (d, x, y) => new Add(new Multiply(new Const(2), new Multiply(x[0], x[1])),
+        new Multiply(new Const(2), new Multiply(y[0], y[1]))))
+const HMean     = createOperation(
+    "hmean",
+    (x, y) => 2 / (1 / x + 1 / y),
     (d, x, y) => new Divide(new Const(2), new Add(new Divide(Const.one, x[0]), new Divide(Const.one, y[0]))).diff(d));
-const Negate    = createOperation("negate", x => -x, (d, x) => new Negate(x[1]));
-const Abs       = createOperation("abs", x => Math.abs(x), (d, x) => new Multiply(new Sign(x[0]), x[1]));
-const Sign      = createOperation("sign", x => Math.sign(x), () => Const.zero);
-const Log       = createOperation("log", x => Math.log(x), (d, x) => new Divide(x[1], x[0]));
-const Pow       = createOperation("^", (x, y) => Math.pow(x, y),
-    (d, x, y) => new Multiply(new Pow(x[0], new Subtract(y[0], Const.one)), new Add(new Multiply(y[0], x[1]), new Multiply(x[0], new Multiply(new Log(x[0]), y[1])))));
-const ArithMean = createOperation("arith-mean", (...args) => args.reduce((sum, term) => sum + term, 0) / args.length,
-    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), args.reduce((sum, term) => new Add(sum, term[1]), Const.zero)));
-const GeomMean  = createOperation("geom-mean", (...args) => Math.pow(Math.abs(args.reduce((prod, term) => prod * term, 1)), 1 / args.length),
-    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)), new Multiply(new Pow(new GeomMean(...args.map(e => e[0])), new Subtract(Const.one, new Const(args.length))) ,
+const Negate = createOperation(
+    "negate",
+    x => -x,
+    (d, x) => new Negate(x[1]));
+const Abs = createOperation(
+    "abs",
+    x => Math.abs(x),
+    (d, x) => new Multiply(new Sign(x[0]), x[1]));
+const Sign = createOperation(
+    "sign",
+    x => Math.sign(x),
+    () => Const.zero);
+const Log = createOperation(
+    "log",
+    x => Math.log(x),
+    (d, x) => new Divide(x[1], x[0]));
+const Pow  = createOperation(
+    "^",
+    (x, y) => Math.pow(x, y),
+    (d, x, y) => new Multiply(new Pow(x[0], new Subtract(y[0], Const.one)),
+        new Add(new Multiply(y[0], x[1]), new Multiply(x[0], new Multiply(new Log(x[0]), y[1])))));
+const ArithMean = createOperation(
+    "arith-mean",
+    (...args) => args.reduce((sum, term) => sum + term, 0) / args.length,
+    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)),
+        args.reduce((sum, term) => new Add(sum, term[1]), Const.zero)));
+const GeomMean  = createOperation(
+    "geom-mean",
+    (...args) => Math.pow(Math.abs(args.reduce((prod, term) => prod * term, 1)), 1 / args.length),
+    (d, ...args) => new Multiply(new Divide(Const.one, new Const(args.length)),
+        new Multiply(new Pow(new GeomMean(...args.map(e => e[0])), new Subtract(Const.one, new Const(args.length))) ,
         new Abs(args.reduce((prod, multiplier) => new Multiply(prod, multiplier[0]), Const.one)).diff(d))));
-const HarmMean  = createOperation("harm-mean", (...args) => args.length / args.reduce((sum, term) => sum + 1 / term, 0),
-    (d, ...args) => new Multiply(new Const(args.length), new Divide(args.reduce((sum, term) => new Add(sum, new Divide(term[1], new Multiply(term[0], term[0]))), Const.zero),
+const HarmMean  = createOperation(
+    "harm-mean",
+    (...args) => args.length / args.reduce((sum, term) => sum + 1 / term, 0),
+    (d, ...args) => new Multiply(new Const(args.length),
+        new Divide(args.reduce((sum, term) => new Add(sum, new Divide(term[1], new Multiply(term[0], term[0]))), Const.zero),
         new Pow(args.reduce((sum, term) => new Add(sum, new Divide(Const.one, term[0])), Const.zero), new Const(2)))));
 
 const operators = {
@@ -124,7 +163,7 @@ class OperandsMismatchException extends MismatchException {
 const charSource = function (input) {
     return {
         pointer: 0,
-        input: input.replaceAll('(', ' ( ').replaceAll(')', ' ) ').split(" ").filter(e => e !== ""),
+        input: input.replace(/[(]/g, " ( ").replace(/[)]/g, " ) ").split(" ").filter(e => e !== ""),
         current: function () { return this.input[this.pointer] },
         next: function () { return this.input[this.pointer++] },
         isEOF: function () { return this.pointer === this.input.length },
