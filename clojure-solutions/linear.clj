@@ -1,21 +1,20 @@
 (defn check-seq
   ([is-every? every-sizes?] (fn [seq]
-                                ;NOTE: fix error
-                              (and (vector? seq)
+                              (and (sequential? seq)
                                    (apply every-sizes? seq)
                                    (every? is-every? seq))))
   ([is-every?] (partial (check-seq is-every? (constantly identity)))))
 
 (defn ten-shape ([ten]
                  (if (vector? ten)
-                   (if (empty? ten) '(0)
-                                    (let [sizes (map ten-shape ten)]
+                   (if (empty? ten) [0]
+                                    (let [sizes (mapv ten-shape ten)]
                                       (if (apply = sizes)
                                         (cons (count ten) (first sizes))
                                         (assert "Not tensor"))))
-                   '())))
+                   [])))
 
-(defn ten-shapes [& tens] (map ten-shape tens))
+(defn ten-shapes [& tens] (mapv ten-shape tens))
 (defn max-shape [& tens] (apply max-key count (apply ten-shapes tens)))
 (defn same-shape? [& tens] (apply = (apply ten-shapes tens)))
 
@@ -23,7 +22,7 @@
                                 {:pre [((check-seq is-every? same-shape?) args)]}
                                 (apply mapv fun args)))
 
-(def vec? (check-seq number?))
+(defn vec? [v] (and (vector? v) ((check-seq number?) v)))
 (def mat? (check-seq vec? same-shape?))
 
 (def v+ (by-elem vec? +))
