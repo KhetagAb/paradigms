@@ -1,6 +1,6 @@
 (defn check-seq
   ([is-every? every-sizes?] (fn [seq]
-                              (and (sequential? seq)
+                              (and (vector? seq)
                                    (apply every-sizes? seq)
                                    (every? is-every? seq))))
   ([is-every?] (partial (check-seq is-every? (constantly identity)))))
