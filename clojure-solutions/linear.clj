@@ -1,5 +1,6 @@
 (defn check-seq
   ([is-every? every-sizes?] (fn [seq]
+                                ;NOTE: fix error
                               (and (vector? seq)
                                    (apply every-sizes? seq)
                                    (every? is-every? seq))))
