@@ -4,10 +4,14 @@
 (def constant constantly)
 (defn variable [var] (fn [vars] (vars var)))
 
+(defn _div
+  ([f] (/ 1 (double f)))
+  ([f & args] (reduce #(/ %1 (double %2)) f args)))
+
 (def add (operator +))
 (def subtract (operator -))
 (def multiply (operator *))
-(def divide (operator #(/ %1 (double %2))))
+(def divide (operator _div))
 (def negate subtract)
 
 (def operators {'+ add '- subtract '* multiply '/ divide 'negate subtract})
