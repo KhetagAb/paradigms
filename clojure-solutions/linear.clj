@@ -9,12 +9,12 @@
 
 (defn ten-shape ([ten]
                  (if (vector? ten)
-                   (if (empty? ten) [0]
-                                    (let [sizes (mapv ten-shape ten)]
+                   (if (empty? ten) '(0)
+                                    (let [sizes (map ten-shape ten)]
                                       (if (apply = sizes)
                                         (cons (count ten) (first sizes))
                                         (assert "Not tensor"))))
-                   [])))
+                   '())))
 
 (defn ten-shapes [& tens] (mapv ten-shape tens))
 (defn max-shape [& tens] (apply max-key count (apply ten-shapes tens)))
