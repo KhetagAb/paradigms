@@ -7,6 +7,9 @@
                                    (every? is-every? seq))))
   ([is-every?] (partial (check-vec is-every? (constantly identity)))))
 
+;(println (vec? '(1 2 3)))   -> false
+;(println (mat? '([1 2 3]))) -> false
+
 (defn ten-shape ([ten]
                  (if (vector? ten)
                    (if (empty? ten) '(0)
