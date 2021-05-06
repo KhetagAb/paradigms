@@ -60,7 +60,7 @@
     (expression-proto
       (fn [this _] (_value this))
       (fn [_ _] Zero)
-      (fn [this] (format "%.1f" ( _value this))))))
+      (fn [this] (format "%.1f" (_value this))))))
 
 (def Zero (Constant 0))
 (def One (Constant 1))
