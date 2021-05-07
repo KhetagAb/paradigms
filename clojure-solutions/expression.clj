@@ -49,6 +49,7 @@
            'mean mean
            'varn varn}))
 
+
 (load-file "proto.clj")
 
 (def diff (method :diff))
@@ -118,7 +119,7 @@
 (def Negate
   (Operator-factory
     "negate" -
-    (fn [_ arg] (Negate (get arg 1)))))
+    (fn [_ arg] (Negate (arg 1)))))
 
 (def Square
   (Operator-factory
@@ -145,10 +146,10 @@
     "-" -
     (fn [_ & args] (apply Subtract (map (partial second) args)))))
 
-(declare Divide)
 (def Multiply
   (Operator-factory
     "*" *
+; :NOTE: (apply Add ...)
     (fn [_ & args] (second (reduce
                              (fn [[f fd] [s sd]]
                                [(Multiply f s)
@@ -157,6 +158,7 @@
 (def Divide
   (Operator-factory
     "/" _div
+; :NOTE: Явная рекурсия
     (fn [d & args] (if (== (count args) 1)
                      (let [f (first (first args))
                            fd (second (first args))]
@@ -176,17 +178,18 @@
                       s (second b)]
                   (Multiply s (Pow-const f (Subtract s 1)) fd)))))
 
+; :NOTE: Упростить
 (def ArithMean
   (Operator-factory
     "arith-mean" arith-mean
-    (fn [_ & args] (Multiply (Divide One (Constant (count args))) (apply Add (mapv #(second %) args))))))
+    (fn [_ & args] (Divide (apply Add (mapv #(second %) args)) (Constant (count args))))))
 
 (def GeomMean
   (Operator-factory
     "geom-mean" geom-mean
     (fn [d & args] (let [f (mapv #(first %) args)]
                      (Multiply (Divide One (Constant (count args)))
-                             (Pow-const (apply GeomMean f) (Constant (- 1 (count args))))
+                             (Pow-const (apply GeomMean f) (Constant (dec (count args))))
                              (diff (Abs (apply Multiply f)) d))))))
 
 (def HarmMean
