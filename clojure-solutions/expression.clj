@@ -192,7 +192,7 @@
 (def HarmMean
   (Operator-factory
     "harm-mean" harm-mean
-    (fn [d & args] (Multiply
+    (fn [_ & args] (Multiply
                      (Constant (count args))
                      (Divide (apply Add (mapv #(Divide (second %) (Multiply (first %) (first %) )) args))
                              (Pow-const (apply Add (mapv #(Divide One (first %)) args)) (Constant 2)))))))
