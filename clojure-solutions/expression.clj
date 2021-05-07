@@ -4,8 +4,18 @@
 (def constant constantly)
 (defn variable [var] (fn [vars] (vars var)))
 
-(defn _div [f & args] (/ (double f) (apply * args)))
+(defn _div
+  ([f & args] (/ (double f) (apply * args)))
+  ([f] (/ 1.0 f)))
 (defn square [a] (* a a))
+(defn pow [a b] (Math/pow a b))
+(defn sign [a] (Math/signum (double a)))
+(defn abs [a] (Math/abs (double a)))
+
+(defn arith-mean [& args] (/ (apply + args) (count args)))
+(defn geom-mean [& args] (Math/pow (Math/abs (double (apply * args))) (/ 1 (count args))))
+(defn harm-mean [& args] (/ (double (count args)) (apply + (mapv #(/ 1 (double %)) args))))
+
 (defn mean-op [& args] (_div (apply + args) (count args)))
 (defn varn-op [& args] (- (apply mean-op (map square args)) (square (apply mean-op args))))
 
@@ -104,6 +114,27 @@
         :diff-impl diff-impl))
     Operator-prototype))
 
+(declare Multiply)
+(def Negate
+  (Operator-factory
+    "negate" -
+    (fn [_ arg] (Negate (get arg 1)))))
+
+(def Square
+  (Operator-factory
+    "square" square
+    (fn [_ arg] (Multiply (Constant 2) (get arg 0) (get arg 1)))))
+
+(def Sign
+  (Operator-factory
+    "sign" sign
+    (fn [_ _] Zero)))
+
+(def Abs
+  (Operator-factory
+    "abs" abs
+    (fn [_ a] (Multiply (Sign (first a)) (second a)))))
+
 (def Add
   (Operator-factory
     "+" +
@@ -118,24 +149,53 @@
 (def Multiply
   (Operator-factory
     "*" *
-    (fn [_ & args]
-      (let [prod (apply Multiply (map (partial first) args))]
-        (apply Add (map #(Multiply prod (Divide (second %) (first %))) args))))))
+    (fn [_ & args] (second (reduce
+                             (fn [[f fd] [s sd]]
+                               [(Multiply f s)
+                                (Add (Multiply fd s) (Multiply f sd))]) args)))))
 
 (def Divide
   (Operator-factory
     "/" _div
-    (fn [d & args] (let [f (first args)
-                         s (apply Multiply (map (partial first) (rest args)))]
-                     (Divide
-                       (Subtract (Multiply (second f) s)
-                                 (Multiply (diff s d) (first f)))
-                       (Multiply s s))))))
+    (fn [d & args] (if (== (count args) 1)
+                     (let [f (first (first args))
+                           fd (second (first args))]
+                       (Negate (Divide fd (Square f))))
+                     (let [f (first args)
+                           s (apply Multiply (map (partial first) (rest args)))]
+                       (Divide
+                         (Subtract (Multiply (second f) s)
+                                   (Multiply (diff s d) (first f)))
+                         (Multiply s s)))))))
 
-(def Negate
+(def Pow-const
   (Operator-factory
-    "negate" -
-    (fn [_ arg] (Negate (get arg 1)))))
+    "pow" #(Math/pow %1 %2)
+    (fn [_ a b] (let [f (first a)
+                      fd (second a)
+                      s (second b)]
+                  (Multiply s (Pow-const f (Subtract s 1)) fd)))))
+
+(def ArithMean
+  (Operator-factory
+    "arith-mean" arith-mean
+    (fn [_ & args] (Multiply (Divide One (Constant (count args))) (apply Add (mapv #(second %) args))))))
+
+(def GeomMean
+  (Operator-factory
+    "geom-mean" geom-mean
+    (fn [d & args] (let [f (mapv #(first %) args)]
+                     (Multiply (Divide One (Constant (count args)))
+                             (Pow-const (apply GeomMean f) (Constant (- 1 (count args))))
+                             (diff (Abs (apply Multiply f)) d))))))
+
+(def HarmMean
+  (Operator-factory
+    "harm-mean" harm-mean
+    (fn [d & args] (Multiply
+                     (Constant (count args))
+                     (Divide (apply Add (mapv #(Divide (second %) (Multiply (first %) (first %) )) args))
+                             (Pow-const (apply Add (mapv #(Divide One (first %)) args)) (Constant 2)))))))
 
 (def parseObject
   (parser Constant
@@ -146,4 +206,7 @@
            '- Subtract
            '* Multiply
            '/ Divide
-           'negate Negate}))
+           'negate Negate
+           'arith-mean ArithMean
+           'geom-mean GeomMean
+           'harm-mean HarmMean}))
