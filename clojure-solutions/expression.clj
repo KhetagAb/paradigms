@@ -182,14 +182,15 @@
 (def ArithMean
   (Operator-factory
     "arith-mean" arith-mean
-    (fn [_ & args] (Divide (apply Add (mapv #(second %) args)) (Constant (count args))))))
+    (fn [_ & args] (Divide (apply Add (mapv (partial second) args))
+                           (Constant (count args))))))
 
 (def GeomMean
   (Operator-factory
     "geom-mean" geom-mean
     (fn [d & args] (let [f (mapv #(first %) args)]
                      (Multiply (Divide One (Constant (count args)))
-                             (Pow-const (apply GeomMean f) (Constant (dec (count args))))
+                             (Pow-const (apply GeomMean f) (Constant (- 1 (count args))))
                              (diff (Abs (apply Multiply f)) d))))))
 
 (def HarmMean
