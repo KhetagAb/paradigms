@@ -149,7 +149,8 @@
     "/" _div
 ; :NOTE: Явная рекурсия - fixed
     (fn [[a & as] dargs]
-      (println a as)
+      (println (toString a))
+      (println (map toString as))
       (if (nil? as)
                         (Negate (Divide (first dargs) (Square a)))
                         (let [m (apply Multiply as)]
