@@ -134,7 +134,6 @@
     "-" -
     (fn [_ dargs] (apply Subtract dargs))))
 
-; :NOTE: (apply Add ...) - ?
 (defn diff-rule-mul [args dargs]
   (second (reduce
             (fn [[f fd] [s sd]]
