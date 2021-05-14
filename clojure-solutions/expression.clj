@@ -147,17 +147,15 @@
 (def Divide
   (Operator-factory
     "/" _div
-; :NOTE: Явная рекурсия - fixed
+; :NOTE: Упростить
     (fn [[a & as] dargs]
-      (println (toString a))
-      (println (map toString as))
-      (if (nil? as)
-                        (Negate (Divide (first dargs) (Square a)))
-                        (let [m (apply Multiply as)]
-                          (Divide
-                            (Subtract (Multiply m (first dargs))
-                                      (Multiply (diff-rule-mul as (rest dargs)) a))
-                            (Multiply m m)))))))
+      (if (empty? as)
+        (Negate (Divide (first dargs) (Square a)))
+        (let [m (apply Multiply as)]
+          (Divide
+            (Subtract (Multiply m (first dargs))
+                      (Multiply (diff-rule-mul as (rest dargs)) a))
+            (Multiply m m)))))))
 
 ; :NOTE: Упростить - fixed
 (def ArithMean
