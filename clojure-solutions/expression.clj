@@ -1,3 +1,4 @@
+; HOMEWORK №9
 (defn operator [fun]
   (fn [& args] (fn [vars] (apply fun (mapv #(% vars) args)))))
 
@@ -8,13 +9,6 @@
   ([f & args] (/ (double f) (apply * args)))
   ([f] (/ 1.0 f)))
 (defn square [a] (* a a))
-(defn pow [a b] (Math/pow a b))
-(defn sign [a] (Math/signum (double a)))
-(defn abs [a] (Math/abs (double a)))
-
-(defn arith-mean [& args] (/ (apply + args) (count args)))
-(defn geom-mean [& args] (Math/pow (Math/abs (double (apply * args))) (/ 1 (count args))))
-(defn harm-mean [& args] (/ (double (count args)) (apply + (mapv #(/ 1 (double %)) args))))
 
 (defn mean-op [& args] (_div (apply + args) (count args)))
 (defn varn-op [& args] (- (apply mean-op (map square args)) (square (apply mean-op args))))
@@ -49,8 +43,12 @@
            'mean mean
            'varn varn}))
 
-
+; HOMEWORK №10
 (load-file "proto.clj")
+
+(defn arith-mean [& args] (/ (apply + args) (count args)))
+(defn geom-mean [& args] (Math/pow (Math/abs (double (apply * args))) (/ 1 (count args))))
+(defn harm-mean [& args] (/ (double (count args)) (apply + (mapv #(/ 1 (double %)) args))))
 
 (def diff (method :diff))
 (def evaluate (method :evaluate))
@@ -71,7 +69,7 @@
     (expression-proto
       (fn [this _] (_value this))
       (fn [_ _] Zero)
-      (fn [this] (format "%.1f" (_value this))))))
+      (fn [this] (str (_value this))))))
 
 (def Zero (Constant 0))
 (def One (Constant 1))
@@ -98,9 +96,8 @@
       (fn [this vars]
         (apply (_operate this)
                (mapv #(evaluate % vars) (_args this))))
-      (fn [this var]
-        (apply (_diff-impl this)
-               var (mapv #(vector % (diff % var)) (_args this))))
+      (fn [this var] (let [args (_args this)]
+                       ((_diff-impl this) args (mapv #(diff % var) args))))
       (fn [this]
         (str "("  (_symbol this) " "
              (clojure.string/join " " (mapv (partial toString) (_args this))) ")")))))
@@ -119,87 +116,70 @@
 (def Negate
   (Operator-factory
     "negate" -
-    (fn [_ arg] (Negate (arg 1)))))
+    (fn [_ darg] (Negate (first darg)))))
 
 (def Square
   (Operator-factory
     "square" square
-    (fn [_ arg] (Multiply (Constant 2) (get arg 0) (get arg 1)))))
+    (fn [arg darg] (Multiply (Constant 2) (first arg) (first darg)))))
 
-(def Sign
-  (Operator-factory
-    "sign" sign
-    (fn [_ _] Zero)))
-
-(def Abs
-  (Operator-factory
-    "abs" abs
-    (fn [_ a] (Multiply (Sign (first a)) (second a)))))
 
 (def Add
   (Operator-factory
     "+" +
-    (fn [_ & args] (apply Add (map (partial second) args)))))
+    (fn [_ dargs] (apply Add dargs))))
 
 (def Subtract
   (Operator-factory
     "-" -
-    (fn [_ & args] (apply Subtract (map (partial second) args)))))
+    (fn [_ dargs] (apply Subtract dargs))))
+
+; :NOTE: (apply Add ...) - ?
+(defn diff-rule-mul [args dargs]
+  (second (reduce
+            (fn [[f fd] [s sd]]
+              [(Multiply f s)
+               (Add (Multiply fd s) (Multiply f sd))]) (mapv vector args dargs))))
 
 (def Multiply
   (Operator-factory
     "*" *
-; :NOTE: (apply Add ...)
-    (fn [_ & args] (second (reduce
-                             (fn [[f fd] [s sd]]
-                               [(Multiply f s)
-                                (Add (Multiply fd s) (Multiply f sd))]) args)))))
+    diff-rule-mul))
 
 (def Divide
   (Operator-factory
     "/" _div
-; :NOTE: Явная рекурсия
-    (fn [d & args] (if (== (count args) 1)
-                     (let [f (first (first args))
-                           fd (second (first args))]
-                       (Negate (Divide fd (Square f))))
-                     (let [f (first args)
-                           s (apply Multiply (map (partial first) (rest args)))]
-                       (Divide
-                         (Subtract (Multiply (second f) s)
-                                   (Multiply (diff s d) (first f)))
-                         (Multiply s s)))))))
+; :NOTE: Явная рекурсия - fixed
+    (fn [args dargs] (if (== (count args) 1)
+                        (Negate (Divide (first dargs) (Square (first args))))
+                        (let [m (apply Multiply (rest args))]
+                          (Divide
+                            (Subtract (Multiply m (first dargs))
+                                      (Multiply (diff-rule-mul (rest args) (rest dargs)) (first args)))
+                            (Multiply m m)))))))
 
-(def Pow-const
-  (Operator-factory
-    "pow" #(Math/pow %1 %2)
-    (fn [_ a b] (let [f (first a)
-                      fd (second a)
-                      s (second b)]
-                  (Multiply s (Pow-const f (Subtract s 1)) fd)))))
-
-; :NOTE: Упростить
+; :NOTE: Упростить - fixed
 (def ArithMean
   (Operator-factory
     "arith-mean" arith-mean
-    (fn [_ & args] (Divide (apply Add (mapv (partial second) args))
-                           (Constant (count args))))))
+    (fn [_ dargs] (Divide (apply Add dargs)
+                             (Constant (count dargs))))))
 
 (def GeomMean
   (Operator-factory
     "geom-mean" geom-mean
-    (fn [d & args] (let [f (mapv #(first %) args)]
-                     (Multiply (Divide One (Constant (count args)))
-                             (Pow-const (apply GeomMean f) (Constant (- 1 (count args))))
-                             (diff (Abs (apply Multiply f)) d))))))
+    (fn [args dargs] (Multiply
+                       (Constant (/ 1 (count args)))
+                       (apply GeomMean args)
+                       (apply Add (mapv #(Divide %2 %1) args dargs))))))
 
 (def HarmMean
   (Operator-factory
     "harm-mean" harm-mean
-    (fn [_ & args] (Multiply
-                     (Constant (count args))
-                     (Divide (apply Add (mapv #(Divide (second %) (Multiply (first %) (first %) )) args))
-                             (Pow-const (apply Add (mapv #(Divide One (first %)) args)) (Constant 2)))))))
+    (fn [args dargs]
+      (Multiply
+        (Square (apply HarmMean args))
+        (apply ArithMean (mapv #(Divide %2 (Square %1)) args dargs))))))
 
 (def parseObject
   (parser Constant
