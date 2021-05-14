@@ -148,7 +148,9 @@
   (Operator-factory
     "/" _div
 ; :NOTE: Явная рекурсия - fixed
-    (fn [[a & as] dargs] (if (nil? as)
+    (fn [[a & as] dargs]
+      (println a as)
+      (if (nil? as)
                         (Negate (Divide (first dargs) (Square a)))
                         (let [m (apply Multiply as)]
                           (Divide
