@@ -101,7 +101,14 @@
 
 (defn Operator-factory [symbol operate diff-impl]
   (constructor
+<<<<<<< HEAD
     (fn [this & args] (assoc this :args args))
+=======
+    (fn [this & args]
+      (assoc this
+        :args args))
+    ; :NOTE: Прототип - fixed
+>>>>>>> parent of a78e3cb... [HM-10] Remove notes
     {:prototype Operator-prototype
      :symbol symbol
      :operate operate
@@ -139,6 +146,7 @@
 (def Divide
   (Operator-factory
     "/" _div
+; :NOTE: Упростить - fixed
     (fn [[a & as] [d & ds]]
       (if (empty? as)
         (Negate (Divide d (Square a)))
@@ -148,6 +156,7 @@
                       (Multiply (diff-rule-mul as ds) a))
             (Multiply m m)))))))
 
+; :NOTE: Упростить - fixed
 (def ArithMean
   (Operator-factory
     "arith-mean" arith-mean
