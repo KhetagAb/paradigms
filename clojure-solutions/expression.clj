@@ -86,7 +86,6 @@
           Zero))
       (fn [this] (_value this)))))
 
-
 (def Operator-prototype
   (let [_args (field :args)
         _symbol (field :symbol)
@@ -104,15 +103,14 @@
 
 (defn Operator-factory [symbol operate diff-impl]
   (constructor
-
     (fn [this & args]
       (assoc this
-        :args args,
-        ; :NOTE: Прототип
-        :symbol symbol
-        :operate operate
-        :diff-impl diff-impl))
-    Operator-prototype))
+        :args args))
+    ; :NOTE: Прототип - fixed
+    {:prototype Operator-prototype
+     :symbol symbol
+     :operate operate
+     :diff-impl diff-impl}))
 
 (declare Multiply)
 (def Negate
@@ -124,7 +122,6 @@
   (Operator-factory
     "square" square
     (fn [arg darg] (Multiply (Constant 2) (first arg) (first darg)))))
-
 
 (def Add
   (Operator-factory
@@ -147,14 +144,14 @@
 (def Divide
   (Operator-factory
     "/" _div
-; :NOTE: Упростить
-    (fn [[a & as] dargs]
+; :NOTE: Упростить - fixed
+    (fn [[a & as] [d & ds]]
       (if (empty? as)
-        (Negate (Divide (first dargs) (Square a)))
+        (Negate (Divide d (Square a)))
         (let [m (apply Multiply as)]
           (Divide
-            (Subtract (Multiply m (first dargs))
-                      (Multiply (diff-rule-mul as (rest dargs)) a))
+            (Subtract (Multiply m d)
+                      (Multiply (diff-rule-mul as ds) a))
             (Multiply m m)))))))
 
 ; :NOTE: Упростить - fixed
