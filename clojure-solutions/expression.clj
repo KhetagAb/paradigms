@@ -168,7 +168,7 @@
   (Operator-factory
     "geom-mean" geom-mean
     (fn [args dargs] (Multiply
-                       (Constant (/ 1 (count args)))
+                       (Constant (/ (count args)))
                        (apply GeomMean args)
                        (apply Add (mapv #(Divide %2 %1) args dargs))))))
 
