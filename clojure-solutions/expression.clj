@@ -64,8 +64,7 @@
 
 (def Constant
   (constructor
-    (fn [this value]
-      (assoc this :value (double value)))
+    (fn [this value] (assoc this :value (double value)))
     (expression-proto
       (fn [this _] (_value this))
       (fn [_ _] Zero)
@@ -76,8 +75,7 @@
 
 (def Variable
   (constructor
-    (fn [this value]
-      (assoc this :value (str value)))
+    (fn [this value] (assoc this :value (str value)))
     (expression-proto
       (fn [this vars] (vars (_value this)))
       (fn [this var]
@@ -103,10 +101,7 @@
 
 (defn Operator-factory [symbol operate diff-impl]
   (constructor
-    (fn [this & args]
-      (assoc this
-        :args args))
-    ; :NOTE: Прототип - fixed
+    (fn [this & args] (assoc this :args args))
     {:prototype Operator-prototype
      :symbol symbol
      :operate operate
@@ -144,7 +139,6 @@
 (def Divide
   (Operator-factory
     "/" _div
-; :NOTE: Упростить - fixed
     (fn [[a & as] [d & ds]]
       (if (empty? as)
         (Negate (Divide d (Square a)))
@@ -154,7 +148,6 @@
                       (Multiply (diff-rule-mul as ds) a))
             (Multiply m m)))))))
 
-; :NOTE: Упростить - fixed
 (def ArithMean
   (Operator-factory
     "arith-mean" arith-mean
