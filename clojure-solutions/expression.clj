@@ -22,12 +22,12 @@
 (def negate subtract)
 
 (defn parser [constant variables operators]
-  (fn [input]
-    (letfn [(parse-expr [exps]
-              (cond
-                (list? exps) (apply (operators (first exps)) (mapv parse-expr (rest exps)))
-                (number? exps) (constant exps)
-                :else (variables (str exps))))]
+  (letfn [(parse-expr [exps]
+            (cond
+              (list? exps) (apply (operators (first exps)) (mapv parse-expr (rest exps)))
+              (number? exps) (constant exps)
+              :else (variables (str exps))))]
+    (fn [input]
       (parse-expr (read-string input)))))
 
 (def parseFunction
@@ -104,9 +104,11 @@
 
 (defn Operator-factory [symbol operate diff-impl]
   (constructor
+
     (fn [this & args]
       (assoc this
         :args args,
+        ; :NOTE: Прототип
         :symbol symbol
         :operate operate
         :diff-impl diff-impl))
@@ -140,21 +142,18 @@
               [(Multiply f s)
                (Add (Multiply fd s) (Multiply f sd))]) (mapv vector args dargs))))
 
-(def Multiply
-  (Operator-factory
-    "*" *
-    diff-rule-mul))
+(def Multiply (Operator-factory "*" * diff-rule-mul))
 
 (def Divide
   (Operator-factory
     "/" _div
 ; :NOTE: Явная рекурсия - fixed
-    (fn [args dargs] (if (== (count args) 1)
-                        (Negate (Divide (first dargs) (Square (first args))))
-                        (let [m (apply Multiply (rest args))]
+    (fn [[a & as] dargs] (if (empty? as)
+                        (Negate (Divide (first dargs) (Square a)))
+                        (let [m (apply Multiply as)]
                           (Divide
                             (Subtract (Multiply m (first dargs))
-                                      (Multiply (diff-rule-mul (rest args) (rest dargs)) (first args)))
+                                      (Multiply (diff-rule-mul a (rest dargs)) a))
                             (Multiply m m)))))))
 
 ; :NOTE: Упростить - fixed
