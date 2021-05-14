@@ -156,7 +156,7 @@
                         (let [m (apply Multiply as)]
                           (Divide
                             (Subtract (Multiply m (first dargs))
-                                      (Multiply (diff-rule-mul a (rest dargs)) a))
+                                      (Multiply (diff-rule-mul as (rest dargs)) a))
                             (Multiply m m)))))))
 
 ; :NOTE: Упростить - fixed
