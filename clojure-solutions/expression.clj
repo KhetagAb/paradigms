@@ -183,3 +183,6 @@
            'arith-mean ArithMean
            'geom-mean GeomMean
            'harm-mean HarmMean}))
+
+; HOMEWORK №11
+(load-file "parser.clj")
