@@ -214,7 +214,7 @@
 (def *all-chars (mapv char (range 0 128)))
 (defn *char-by-pred [pred] (+char (apply str (filter #(pred %) *all-chars))))
 
-(def *space (*char-by-pred #(Character/isWhitespace %)))
+(def *space (*char-by-pred # (Character/isWhitespace %)))
 (def *ws (+ignore (+star *space)))
 
 (def *digit (*char-by-pred #(Character/isDigit %)))
