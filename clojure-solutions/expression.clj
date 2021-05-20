@@ -199,11 +199,11 @@
 ; HOMEWORK №11
 (load-file "parser.clj")
 
-(defn to-bool [a] (if (> a 0) 1 0))
+(defn to-bool [a] (if (pos? a) 1 0))
 (defn bitwise [operator] (fn [& args] (apply operator (map to-bool args))))
 
 (defn Bitwise-factory [symbol operate]
-  (Operator-factory symbol (bitwise operate) (fn [_ _] (throw (IllegalStateException. "Bitwise operations don't support diff.")))))
+  (Operator-factory symbol (bitwise operate) (constantly (delay (assert false "Bitwise operations don't support diff.")))))
 
 (def And (Bitwise-factory "&&" bit-and))
 (def Or (Bitwise-factory "||" bit-or))
@@ -221,7 +221,7 @@
 (def *number (+seqf (comp read-string str)
                     (+opt (+char "-"))
                     (+str (+plus *digit))
-                    (+opt (+seqf str (+char ".") (+str (+plus *digit))))))
+                    (+str (+opt (+seq (+char ".") (+plus *digit))))))
 
 (defn +word [word]
   (+str (apply +seq (map (partial (comp +char str)) (str word)))))
