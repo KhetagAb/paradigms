@@ -1,14 +1,9 @@
 (defn check-vec
   ([is-every? every-sizes?] (fn [seq]
-                                ;NOTE: fix error
-                                ;sequential? -> vector?
                               (and (vector? seq)
                                    (apply every-sizes? seq)
                                    (every? is-every? seq))))
   ([is-every?] (partial (check-vec is-every? (constantly identity)))))
-
-;(println (vec? '(1 2 3)))   -> false
-;(println (mat? '([1 2 3]))) -> false
 
 (defn ten-shape ([ten]
                  (if (vector? ten)
@@ -16,7 +11,7 @@
                                     (let [sizes (map ten-shape ten)]
                                       (if (apply = sizes)
                                         (cons (count ten) (first sizes))
-                                        (assert "Not tensor"))))
+                                        (assert false "Not tensor"))))
                    '())))
 
 (defn ten-shapes [& tens] (mapv ten-shape tens))
@@ -24,7 +19,6 @@
 (defn same-shape? [& tens] (apply = (apply ten-shapes tens)))
 
 (defn by-elem [is-every? fun] (fn [& args]
-                                ;fixed args -> (into [] args)
                                 {:pre [((check-vec is-every? same-shape?) (into [] args))]}
                                 (apply mapv fun args)))
 
