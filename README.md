@@ -17,7 +17,7 @@
 
 Для тестирования программы требуется запустить соответсвующий каждому домашнему заданию исполняющий файл из [тестов](https://github.com/KhetagAb/paradigms/tree/master/paradigms-tests). Для каждого тестового файла указан его usage. Все тесты следует запускать с параметром enable asserts.
 
-[Условия домашних заданий](http://www.kgeorgiy.info/courses/paradigms/homeworks.html)
+[Условия домашних заданий](https://github.com/KhetagAb/paradigms/blob/master/Statements.md)
 
 ## Домашнее задание 11. Комбинаторные парсеры
 
